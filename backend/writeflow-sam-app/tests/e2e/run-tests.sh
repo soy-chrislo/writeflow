@@ -142,8 +142,12 @@ elif [ "$RUN_AUTH_TESTS" = false ]; then
     echo -e "${YELLOW}No-auth mode: Running public endpoint tests only${NC}"
     hurl "${HURL_OPTS[@]}" \
         "$SCRIPT_DIR/posts/list-public-posts.hurl" \
+        "$SCRIPT_DIR/posts/list-public-posts-with-limit.hurl" \
         "$SCRIPT_DIR/posts/get-post-not-found.hurl" \
         "$SCRIPT_DIR/posts/list-my-posts-unauthorized.hurl" \
+        "$SCRIPT_DIR/posts/create-post-unauthorized.hurl" \
+        "$SCRIPT_DIR/posts/update-post-unauthorized.hurl" \
+        "$SCRIPT_DIR/posts/delete-post-unauthorized.hurl" \
         "$SCRIPT_DIR/upload/get-upload-url-unauthorized.hurl"
 elif [ "$RUN_INDIVIDUAL" = false ]; then
     echo -e "${YELLOW}Flows mode: Running flow tests only${NC}"
