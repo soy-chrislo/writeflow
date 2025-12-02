@@ -1,0 +1,3 @@
+# Ignore environment files with real credentials
+*.env
+!*.env.example

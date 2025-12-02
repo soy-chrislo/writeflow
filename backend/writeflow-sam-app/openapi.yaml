@@ -1,0 +1,606 @@
+openapi: '3.0.1'
+info:
+  title: Writeflow CMS API
+  description: Serverless CMS API for content management
+  version: '1.0.0'
+  contact:
+    name: Writeflow
+
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      apiId:
+        default: api-id
+      region:
+        default: us-east-1
+      stage:
+        default: dev
+
+paths:
+  /posts:
+    get:
+      summary: List published posts
+      description: Returns a list of all published posts (public endpoint)
+      operationId: listPublicPosts
+      tags:
+        - Posts
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of posts to return
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: nextToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of published posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+    post:
+      summary: Create a new post
+      description: Creates a new post (requires authentication)
+      operationId: createPost
+      tags:
+        - Posts
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreatePostFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+  /posts/{slug}:
+    get:
+      summary: Get a post by slug
+      description: Returns a single post with its content (public endpoint for published posts)
+      operationId: getPost
+      tags:
+        - Posts
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Post slug
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithContentResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+    put:
+      summary: Update a post
+      description: Updates an existing post (requires authentication, must be post owner)
+      operationId: updatePost
+      tags:
+        - Posts
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Post slug
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - not post owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdatePostFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+    delete:
+      summary: Delete a post
+      description: Deletes an existing post (requires authentication, must be post owner)
+      operationId: deletePost
+      tags:
+        - Posts
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Post slug
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - not post owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeletePostFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+  /my/posts:
+    get:
+      summary: List my posts
+      description: Returns all posts for the authenticated user (drafts and published)
+      operationId: listMyPosts
+      tags:
+        - Posts
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of posts to return
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum:
+              - draft
+              - published
+        - name: nextToken
+          in: query
+          description: Pagination token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of user's posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+  /my/posts/{slug}:
+    get:
+      summary: Get my post by slug
+      description: Returns a single post with its content (authenticated endpoint for owner access to any status)
+      operationId: getMyPost
+      tags:
+        - Posts
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Post slug
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithContentResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+  /upload-url:
+    post:
+      summary: Get presigned URL for content upload
+      description: Returns a presigned S3 URL for uploading post content directly from the frontend
+      operationId: getUploadUrl
+      tags:
+        - Upload
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetUploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+
+components:
+  securitySchemes:
+    CognitoAuthorizer:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - Fn::GetAtt: [WriteflowUserPool, Arn]
+
+  schemas:
+    GetUploadUrlRequest:
+      type: object
+      required:
+        - slug
+      properties:
+        slug:
+          type: string
+          description: Post slug for the content file
+          example: my-first-blog-post
+        contentType:
+          type: string
+          description: Content type of the file
+          default: text/html
+          example: text/html
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            uploadUrl:
+              type: string
+              description: Presigned S3 URL for uploading content
+              example: https://bucket.s3.amazonaws.com/posts/user-id/my-post.html?...
+            contentKey:
+              type: string
+              description: S3 key where the content will be stored
+              example: posts/user-id/my-first-blog-post.html
+            expiresIn:
+              type: integer
+              description: URL expiration time in seconds
+              example: 300
+
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - contentKey
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Post title
+          example: My First Blog Post
+        contentKey:
+          type: string
+          description: S3 key where the content was uploaded (obtained from /upload-url)
+          example: posts/user-id/my-first-blog-post.html
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+          default: draft
+          description: Post status
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Post title
+        contentKey:
+          type: string
+          description: S3 key where the new content was uploaded (obtained from /upload-url)
+          example: posts/user-id/my-first-blog-post.html
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+          description: Post status
+
+    Post:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: URL-friendly identifier
+          example: my-first-blog-post
+        title:
+          type: string
+          description: Post title
+          example: My First Blog Post
+        authorId:
+          type: string
+          description: Author's Cognito sub
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+          description: Post status
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        publishedAt:
+          type: string
+          format: date-time
+          description: Publication timestamp (if published)
+
+    PostWithContent:
+      allOf:
+        - $ref: '#/components/schemas/Post'
+        - type: object
+          properties:
+            content:
+              type: string
+              description: HTML content of the post
+
+    PostResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Post'
+
+    PostWithContentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/PostWithContent'
+
+    PostListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            posts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Post'
+            nextToken:
+              type: string
+              description: Pagination token for next page
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: Post not found

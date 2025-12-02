@@ -1,0 +1,241 @@
+---
+title: "Writeflow - Serverless CMS"
+description: "A lightweight, serverless content management system built with React and AWS. Features a modern rich text editor, user authentication, and CDN-powered content delivery."
+problem: "Content creators need simple publishing tools without the overhead of traditional CMS platforms. Most solutions are either too complex or require expensive infrastructure to maintain."
+role: "Full-Stack Developer - Designed the serverless architecture, implemented the editor integration, and built the entire AWS backend using Infrastructure as Code."
+stack: ["React", "TypeScript", "Tiptap", "AWS SAM", "Lambda", "API Gateway", "DynamoDB", "S3", "Cognito", "CloudFlare"]
+featured: true
+thumbnail: "/images/projects/writeflow-dashboard.svg"
+order: 1
+lang: "en"
+translationKey: "writeflow"
+---
+
+import DiagramViewer from '../../../components/diagrams/DiagramViewer.astro';
+import WriteflowArchitecture from '../../../components/diagrams/WriteflowArchitecture.astro';
+
+## Context
+
+As a developer creating content for my YouTube channels and blog, I experienced firsthand the friction of existing CMS solutions. WordPress felt bloated—themes heavy with visual builders, sliders, and built-in scripts can destroy performance even before adding content [[1]](#ref-1), and the platform faces ongoing criticism about site load speed [[2]](#ref-2). Headless CMS platforms required complex setups with limited free tiers: Contentful's free tier caps at 25K records and 100K API calls/month [[3]](#ref-3), and their Team plan starts at $489/month [[4]](#ref-4). Even Sanity, known for generous limits, jumps to $99/month for teams [[5]](#ref-5). Simple static site generators like Astro lacked real-time editing capabilities—content updates require triggering a build on the host, which is never instant or dynamic [[6]](#ref-6).
+
+I decided to build Writeflow: a minimal, serverless CMS that focuses on the writing experience while leveraging AWS's pay-per-use model to keep costs near zero for small-scale usage.
+
+## Technical Challenges
+
+### Choosing the Right Editor
+
+The editor is the heart of any CMS. After researching the top options for React in 2025, I evaluated:
+
+| Editor | Pros | Cons |
+|--------|------|------|
+| **<a href="https://tiptap.dev/" target="_blank">Tiptap</a>** | Excellent docs, React-first, extensible | Learning curve |
+| <a href="https://lexical.dev/" target="_blank">Lexical</a> | Meta-backed, cross-platform | Not yet 1.0, less mature |
+| <a href="https://www.slatejs.org/" target="_blank">Slate</a> | Highly customizable | Sparse documentation |
+| <a href="https://quilljs.com/" target="_blank">Quill</a> | Simple, battle-tested | Less flexible |
+
+**Decision:** I chose **Tiptap** for its <a href="https://tiptap.dev/docs" target="_blank">superior documentation</a>, <a href="https://github.com/ueberdosis/tiptap" target="_blank">active maintenance</a>, and <a href="https://tiptap.dev/docs/editor/extensions" target="_blank">rich plugin ecosystem</a>. The core editor is open source and free—paid plans are only for their cloud collaboration features, which aren't needed here. Its ProseMirror foundation provides a solid, battle-tested core.
+
+```typescript
+// Tiptap editor setup with essential extensions
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    Placeholder.configure({
+      placeholder: 'Start writing...'
+    }),
+    Link.configure({
+      openOnClick: false
+    }),
+    Image,
+    CodeBlockLowlight.configure({
+      lowlight
+    })
+  ],
+  content: initialContent,
+  onUpdate: ({ editor }) => {
+    debouncedSave(editor.getHTML());
+  }
+});
+```
+
+### Serverless Architecture with AWS SAM
+
+Traditional CMS platforms require always-on servers. I wanted true serverless: pay only when users interact.
+
+**Architecture:**
+
+<DiagramViewer>
+  <WriteflowArchitecture />
+</DiagramViewer>
+
+**SAM Template (simplified):**
+
+```yaml
+Resources:
+  PostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: writeflow-posts
+      AttributeDefinitions:
+        - AttributeName: slug
+          AttributeType: S
+        - AttributeName: authorId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: slug
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: author-index
+          KeySchema:
+            - AttributeName: authorId
+              KeyType: HASH
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub writeflow-content-${AWS::AccountId}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET]
+            AllowedOrigins: ['*']
+
+  CreatePostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers/posts.create
+      Runtime: nodejs20.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PostsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ContentBucket
+```
+
+### Content Storage Strategy
+
+I debated between storing Markdown vs HTML:
+
+| Format | Pros | Cons |
+|--------|------|------|
+| Markdown | Portable, lightweight, git-friendly | Requires parsing on render |
+| HTML | Direct from Tiptap, immediate render | Larger, XSS risk if unsanitized |
+
+**Decision:** Store **sanitized HTML** in S3. Tiptap outputs HTML natively, and using DOMPurify on save eliminates <a href="https://owasp.org/www-community/attacks/xss/" target="_blank">XSS</a> concerns. This avoids the complexity of Markdown parsing while maintaining security.
+
+> **What is XSS?** Cross-Site Scripting is an attack where malicious scripts are injected into trusted websites. Without sanitization, an attacker could embed JavaScript in a post that steals cookies or session tokens from other users viewing the content.
+
+```typescript
+// Sanitize before storing
+import DOMPurify from 'dompurify';
+
+const sanitizedHTML = DOMPurify.sanitize(editor.getHTML(), {
+  ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'img'],
+  ALLOWED_ATTR: ['href', 'src', 'alt', 'class']
+});
+```
+
+### URL Slug Generation
+
+Each post needs a unique, SEO-friendly URL. I implemented automatic slug generation with collision detection:
+
+```typescript
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function ensureUniqueSlug(baseSlug: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await slugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+```
+
+### Draft and Published States
+
+Posts support two states for a proper editorial workflow:
+
+```typescript
+interface Post {
+  slug: string;
+  title: string;
+  authorId: string;
+  status: 'draft' | 'published';
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  contentKey: string; // S3 key for HTML content
+}
+```
+
+The public listing endpoint only returns published posts, while the authenticated dashboard shows all posts for the author.
+
+## Architecture Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Cognito for auth | Native AWS integration, handles JWT tokens, user pools out of the box |
+| DynamoDB for metadata | Serverless, pay-per-request, fast key-value lookups for slugs |
+| S3 for content | Cost-effective storage, integrates with CloudFlare CDN |
+| CloudFlare CDN | Global edge caching, DDoS protection, generous free tier |
+| AWS SAM | Infrastructure as Code, local testing with SAM CLI, easy deployments |
+| Tiptap editor | Best documentation, React-native, active community |
+
+## Key Features
+
+- **Rich Text Editor**: Tiptap-powered with headings, lists, code blocks, images, and links
+- **Authentication**: Cognito-based login with email/password
+- **Draft System**: Save drafts before publishing
+- **SEO-Friendly URLs**: Automatic slug generation from titles
+- **CDN Delivery**: CloudFlare caching for fast global access
+- **Serverless**: Near-zero cost for low-traffic usage
+
+## Lessons Learned
+
+1. **Tiptap's learning curve is worth it**: The initial investment in understanding ProseMirror concepts pays off with a highly customizable editor.
+
+2. **DynamoDB single-table design**: For a simple app, one table with a GSI for author queries is cleaner than multiple tables.
+
+3. **CloudFlare + S3 origin**: Setting up proper CORS and cache headers took trial and error, but the result is sub-100ms content delivery globally.
+
+4. **SAM local testing**: `sam local start-api` saved hours of debugging by catching issues before deployment.
+
+## Future Improvements
+
+- Image upload with S3 presigned URLs
+- Markdown export option
+- Custom domains per user
+- Collaboration features with Tiptap's Yjs integration
+
+## Screenshots
+
+![Editor view with Tiptap](/images/projects/writeflow-editor.svg)
+
+![Post listing dashboard](/images/projects/writeflow-dashboard.svg)
+
+---
+
+## References
+
+<span id="ref-1">[1]</span> WPMU DEV. *Why WordPress is Slow and Bloated (And Why You Need to Deal With It)*. <a href="https://wpmudev.com/blog/wordpress-bloat/" target="_blank">wpmudev.com</a>
+
+<span id="ref-2">[2]</span> Afteractive. *The Drawbacks of WordPress: Slow Performance, Bloat, Security Vulnerabilities, and Compatibility*. <a href="https://www.afteractive.com/blog/the-drawbacks-of-wordpress" target="_blank">afteractive.com</a>
+
+<span id="ref-3">[3]</span> Monetizely. *Contentful vs Strapi vs Sanity: Which Headless CMS Has the Best Pricing for Developers?*. <a href="https://www.getmonetizely.com/articles/contentful-vs-strapi-vs-sanity-which-headless-cms-has-the-best-pricing-for-developers" target="_blank">getmonetizely.com</a>
+
+<span id="ref-4">[4]</span> GroRapid Labs. *Headless CMS pricing: Cost comparison of top solutions*. <a href="https://www.grorapidlabs.com/blog/headless-cms-pricing-cost-comparison-of-top-solutions" target="_blank">grorapidlabs.com</a>
+
+<span id="ref-5">[5]</span> Hygraph. *Best free headless CMS platforms in 2025: A cost-value comparison*. <a href="https://hygraph.com/blog/best-free-headless-cms" target="_blank">hygraph.com</a>
+
+<span id="ref-6">[6]</span> Stack Overflow. *Can the Astro Static Site Generator framework be used to create pages on the fly from data fetched from an API?*. <a href="https://stackoverflow.com/questions/69521559/can-the-astro-static-site-generator-framework-be-used-to-create-pages-on-the-fly" target="_blank">stackoverflow.com</a>

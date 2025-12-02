@@ -1,0 +1,380 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Writeflow CMS - Serverless API Backend
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        POSTS_TABLE: !Ref PostsTable
+        CONTENT_BUCKET: !Ref ContentBucket
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # ============================================
+  # COGNITO USER POOL
+  # ============================================
+  WriteflowUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub writeflow-users-${Environment}
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  WriteflowUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub writeflow-client-${Environment}
+      UserPoolId: !Ref WriteflowUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - http://localhost:3000/callback
+      LogoutURLs:
+        - http://localhost:3000/logout
+
+  WriteflowUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub writeflow-${Environment}-${AWS::AccountId}
+      UserPoolId: !Ref WriteflowUserPool
+
+  # ============================================
+  # API GATEWAY
+  # ============================================
+  WriteflowApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub writeflow-api-${Environment}
+      StageName: !Ref Environment
+      OpenApiVersion: '3.0.1'
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt WriteflowUserPool.Arn
+            Identity:
+              Header: Authorization
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./openapi.yaml
+
+  # ============================================
+  # DYNAMODB TABLE
+  # ============================================
+  PostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub writeflow-posts-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: slug
+          AttributeType: S
+        - AttributeName: authorId
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: slug
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: author-index
+          KeySchema:
+            - AttributeName: authorId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: status-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # ============================================
+  # S3 BUCKET
+  # ============================================
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub writeflow-content-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3600
+
+  ContentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub ${ContentBucket.Arn}/*
+
+  # ============================================
+  # LAMBDA FUNCTIONS
+  # ============================================
+  CreatePostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-create-post-${Environment}
+      CodeUri: src/
+      Handler: handlers/createPost.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PostsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ContentBucket
+      Events:
+        CreatePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /posts
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/createPost.ts
+
+  GetPostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-get-post-${Environment}
+      CodeUri: src/
+      Handler: handlers/getPost.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PostsTable
+        - S3ReadPolicy:
+            BucketName: !Ref ContentBucket
+      Events:
+        GetPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /posts/{slug}
+            Method: GET
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+        GetMyPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /my/posts/{slug}
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/getPost.ts
+
+  UpdatePostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-update-post-${Environment}
+      CodeUri: src/
+      Handler: handlers/updatePost.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PostsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ContentBucket
+      Events:
+        UpdatePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /posts/{slug}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/updatePost.ts
+
+  DeletePostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-delete-post-${Environment}
+      CodeUri: src/
+      Handler: handlers/deletePost.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PostsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ContentBucket
+      Events:
+        DeletePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /posts/{slug}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/deletePost.ts
+
+  ListPostsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-list-posts-${Environment}
+      CodeUri: src/
+      Handler: handlers/listPosts.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PostsTable
+      Events:
+        ListPublicPosts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /posts
+            Method: GET
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+        ListMyPosts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /my/posts
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/listPosts.ts
+
+  GetUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-get-upload-url-${Environment}
+      CodeUri: src/
+      Handler: handlers/getUploadUrl.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ContentBucket
+      Events:
+        GetUploadUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /upload-url
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/getUploadUrl.ts
+
+# ============================================
+# OUTPUTS
+# ============================================
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${WriteflowApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref WriteflowUserPool
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref WriteflowUserPoolClient
+
+  UserPoolDomain:
+    Description: Cognito User Pool Domain
+    Value: !Sub https://writeflow-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com
+
+  PostsTableName:
+    Description: DynamoDB Posts Table Name
+    Value: !Ref PostsTable
+
+  ContentBucketName:
+    Description: S3 Content Bucket Name
+    Value: !Ref ContentBucket
