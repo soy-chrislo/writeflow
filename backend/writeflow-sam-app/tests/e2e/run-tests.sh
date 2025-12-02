@@ -24,6 +24,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Filter libcurl warnings from hurl output
+run_hurl() {
+    hurl "$@" 2>&1 | grep -v "boolean setopt(81)"
+}
+
 # Check if hurl is installed
 if ! command -v hurl &> /dev/null; then
     echo -e "${RED}Error: hurl is not installed${NC}"
@@ -164,12 +169,12 @@ echo ""
 
 if [ "$QUICK_MODE" = true ]; then
     echo -e "${YELLOW}Quick mode: Running smoke tests only${NC}"
-    hurl "${HURL_OPTS[@]}" \
+    run_hurl "${HURL_OPTS[@]}" \
         "$SCRIPT_DIR/posts/list-public-posts.hurl" \
         "$SCRIPT_DIR/posts/get-post-not-found.hurl"
 elif [ "$RUN_AUTH_TESTS" = false ]; then
     echo -e "${YELLOW}No-auth mode: Running public endpoint tests only${NC}"
-    hurl "${HURL_OPTS[@]}" \
+    run_hurl "${HURL_OPTS[@]}" \
         "$SCRIPT_DIR/posts/list-public-posts.hurl" \
         "$SCRIPT_DIR/posts/list-public-posts-with-limit.hurl" \
         "$SCRIPT_DIR/posts/get-post-not-found.hurl" \
@@ -180,27 +185,27 @@ elif [ "$RUN_AUTH_TESTS" = false ]; then
         "$SCRIPT_DIR/upload/get-upload-url-unauthorized.hurl"
 elif [ "$RUN_INDIVIDUAL" = false ]; then
     echo -e "${YELLOW}Flows mode: Running flow tests only${NC}"
-    hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/flows/"*.hurl
+    run_hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/flows/"*.hurl
 else
     echo -e "${YELLOW}Full mode: Running all tests${NC}"
 
     # Run individual tests first (can run in parallel)
     echo ""
     echo -e "${BLUE}Individual endpoint tests:${NC}"
-    hurl "${HURL_OPTS[@]}" \
+    run_hurl "${HURL_OPTS[@]}" \
         "$SCRIPT_DIR/posts/"*.hurl \
         "$SCRIPT_DIR/upload/"*.hurl
 
     # Run flow tests sequentially
     echo ""
     echo -e "${BLUE}Flow tests:${NC}"
-    hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/flows/"*.hurl
+    run_hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/flows/"*.hurl
 
     # Run security tests if second user token is available
     if [ -n "$ACCESS_TOKEN_2" ]; then
         echo ""
         echo -e "${BLUE}Cross-user security tests:${NC}"
-        hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/security/"*.hurl
+        run_hurl "${HURL_OPTS[@]}" --jobs 1 "$SCRIPT_DIR/security/"*.hurl
     fi
 fi
 
