@@ -9,6 +9,10 @@ dist/
 .env
 .env.local
 .env.*.local
+vars/dev.env
+
+# SAM config (use samconfig.toml.example as template)
+samconfig.toml
 
 # IDE
 .idea/
