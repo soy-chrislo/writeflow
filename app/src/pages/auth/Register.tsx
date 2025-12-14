@@ -1,16 +1,15 @@
-import { Link } from "react-router"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Link } from "react-router";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -18,13 +17,13 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
-import { useAuth } from "@/hooks/use-auth"
-import { passwordSchema } from "@/lib/validations"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { passwordSchema } from "@/lib/validations";
 
 const registerSchema = z
 	.object({
-		name: z.string().min(2, "Name must be at least 2 characters"),
 		email: z.string().email("Invalid email address"),
 		password: passwordSchema,
 		confirmPassword: z.string(),
@@ -32,30 +31,28 @@ const registerSchema = z
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords don't match",
 		path: ["confirmPassword"],
-	})
+	});
 
-type RegisterFormValues = z.infer<typeof registerSchema>
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Register() {
-	const { register, isLoading, error, clearError } = useAuth()
+	const { register, isLoading, error, clearError } = useAuth();
 
 	const form = useForm<RegisterFormValues>({
 		resolver: zodResolver(registerSchema),
 		defaultValues: {
-			name: "",
 			email: "",
 			password: "",
 			confirmPassword: "",
 		},
-	})
+	});
 
 	async function onSubmit(data: RegisterFormValues) {
 		try {
 			await register({
-				name: data.name,
 				email: data.email,
 				password: data.password,
-			})
+			});
 		} catch {
 			// Error handled in hook
 		}
@@ -66,9 +63,7 @@ export default function Register() {
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<CardTitle className="text-2xl">Create an account</CardTitle>
-					<CardDescription>
-						Enter your details to get started
-					</CardDescription>
+					<CardDescription>Enter your details to get started</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{error && (
@@ -86,24 +81,6 @@ export default function Register() {
 
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Name</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="John Doe"
-												autoComplete="name"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
 							<FormField
 								control={form.control}
 								name="email"
@@ -176,5 +153,5 @@ export default function Register() {
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

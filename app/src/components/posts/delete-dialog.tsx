@@ -7,15 +7,15 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import type { Post } from "@/types/post"
+} from "@/components/ui/alert-dialog";
+import type { Post } from "@/types/post";
 
 interface DeleteDialogProps {
-	post: Post | null
-	open: boolean
-	onOpenChange: (open: boolean) => void
-	onConfirm: () => void
-	isDeleting?: boolean
+	post: Post | null;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onConfirm: () => void;
+	isDeleting?: boolean;
 }
 
 export function DeleteDialog({
@@ -32,9 +32,7 @@ export function DeleteDialog({
 					<AlertDialogTitle>Delete post</AlertDialogTitle>
 					<AlertDialogDescription>
 						Are you sure you want to delete{" "}
-						<span className="font-medium text-foreground">
-							"{post?.title}"
-						</span>
+						<span className="font-medium text-foreground">"{post?.title}"</span>
 						? This action cannot be undone.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
@@ -50,5 +48,5 @@ export function DeleteDialog({
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
-	)
+	);
 }

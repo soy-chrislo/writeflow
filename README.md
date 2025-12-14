@@ -1,6 +1,17 @@
 # Writeflow
 
-A serverless CMS with a rich text editor and live preview, built with React and AWS SAM.
+A serverless CMS with a rich text editor and live preview. Built as a portfolio project to demonstrate full-stack development skills with modern technologies.
+
+## Features
+
+- **Rich Text Editor** - TipTap-based editor with formatting toolbar (headings, lists, links, code blocks, blockquotes)
+- **Live Preview** - Real-time HTML preview with DOMPurify sanitization
+- **Authentication** - Complete auth flow: register, confirm email, login, password reset
+- **Token Management** - Hybrid refresh strategy (proactive + reactive) for seamless UX
+- **Post Management** - Full CRUD with publish/unpublish workflow
+- **File Uploads** - S3 presigned URLs for secure image uploads
+- **Public Blog** - Public-facing blog with SEO-friendly slugs
+- **E2E Testing** - Comprehensive API tests including security scenarios
 
 ## Tech Stack
 
@@ -44,7 +55,7 @@ If you just want to explore the frontend UI without backend:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/writeflow.git
+git clone https://github.com/soy-chrislo/writeflow.git
 cd writeflow
 
 # Setup frontend
@@ -60,7 +71,7 @@ The frontend will run at `http://localhost:5173` but API calls will fail without
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/writeflow.git
+git clone https://github.com/soy-chrislo/writeflow.git
 cd writeflow
 
 # Run the setup script
@@ -223,4 +234,4 @@ See `vars/dev.env.example` for all required variables.
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

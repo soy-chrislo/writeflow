@@ -1,0 +1,561 @@
+auth-register:
+  options:
+    summary: CORS support for /auth/register
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Register a new user
+    description: |
+      Creates a new user account. A confirmation code will be sent to the
+      provided email address. Use /auth/confirm to verify the account.
+    operationId: register
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/RegisterRequest'
+    responses:
+      '201':
+        description: User registered successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/RegisterResponse'
+      '400':
+        description: Invalid request (missing fields or invalid email/password)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '409':
+        description: Account with this email already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-confirm:
+  options:
+    summary: CORS support for /auth/confirm
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Confirm user registration
+    description: |
+      Confirms a user's email address using the confirmation code sent during registration.
+    operationId: confirmRegistration
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/ConfirmRequest'
+    responses:
+      '200':
+        description: Account confirmed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/SuccessResponse'
+      '400':
+        description: Invalid or expired confirmation code
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: User not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-login:
+  options:
+    summary: CORS support for /auth/login
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Login user
+    description: |
+      Authenticates a user with email and password. Returns access, ID, and refresh tokens.
+    operationId: login
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/LoginResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Invalid credentials
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Account not confirmed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LoginFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-refresh:
+  options:
+    summary: CORS support for /auth/refresh
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Refresh authentication tokens
+    description: |
+      Exchanges a refresh token for new access and ID tokens.
+      The refresh token is sent in the request body (not as a cookie).
+      This endpoint does not require authentication.
+    operationId: refreshToken
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/RefreshTokenRequest'
+    responses:
+      '200':
+        description: Tokens refreshed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/RefreshTokenResponse'
+      '400':
+        description: Invalid request (missing or malformed refresh token)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Invalid or expired refresh token
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RefreshTokenFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-resend-code:
+  options:
+    summary: CORS support for /auth/resend-code
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Resend confirmation code
+    description: |
+      Resends the email confirmation code. Use this when the original code
+      expired or the user didn't receive it.
+    operationId: resendCode
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/ResendCodeRequest'
+    responses:
+      '200':
+        description: Confirmation code sent
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/CodeDeliveryResponse'
+      '400':
+        description: User is already confirmed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: User not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '429':
+        description: Too many requests
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResendCodeFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-forgot-password:
+  options:
+    summary: CORS support for /auth/forgot-password
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Request password reset
+    description: |
+      Initiates the password reset process. A reset code will be sent to
+      the user's email address.
+    operationId: forgotPassword
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/ForgotPasswordRequest'
+    responses:
+      '200':
+        description: Password reset code sent (if account exists)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/CodeDeliveryResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '429':
+        description: Too many requests
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ForgotPasswordFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+auth-reset-password:
+  options:
+    summary: CORS support for /auth/reset-password
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Reset password with code
+    description: |
+      Completes the password reset process using the code sent via email.
+    operationId: resetPassword
+    tags:
+      - Auth
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/ResetPasswordRequest'
+    responses:
+      '200':
+        description: Password reset successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/SuccessResponse'
+      '400':
+        description: Invalid or expired reset code, or password doesn't meet requirements
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: User not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '429':
+        description: Too many attempts
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetPasswordFunction.Arn}/invocations
+      passthroughBehavior: when_no_match

@@ -2,12 +2,13 @@ import {
 	type ColumnDef,
 	flexRender,
 	getCoreRowModel,
-	useReactTable,
 	getPaginationRowModel,
-	type SortingState,
 	getSortedRowModel,
-} from "@tanstack/react-table"
-import { useState } from "react"
+	type SortingState,
+	useReactTable,
+} from "@tanstack/react-table";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Table,
 	TableBody,
@@ -15,13 +16,12 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/table";
 
 interface DataTableProps<TData, TValue> {
-	columns: ColumnDef<TData, TValue>[]
-	data: TData[]
-	isLoading?: boolean
+	columns: ColumnDef<TData, TValue>[];
+	data: TData[];
+	isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -29,7 +29,7 @@ export function DataTable<TData, TValue>({
 	data,
 	isLoading,
 }: DataTableProps<TData, TValue>) {
-	const [sorting, setSorting] = useState<SortingState>([])
+	const [sorting, setSorting] = useState<SortingState>([]);
 
 	const table = useReactTable({
 		data,
@@ -41,7 +41,7 @@ export function DataTable<TData, TValue>({
 		state: {
 			sorting,
 		},
-	})
+	});
 
 	return (
 		<div className="space-y-4">
@@ -56,7 +56,7 @@ export function DataTable<TData, TValue>({
 											? null
 											: flexRender(
 													header.column.columnDef.header,
-													header.getContext()
+													header.getContext(),
 												)}
 									</TableHead>
 								))}
@@ -83,7 +83,7 @@ export function DataTable<TData, TValue>({
 										<TableCell key={cell.id}>
 											{flexRender(
 												cell.column.columnDef.cell,
-												cell.getContext()
+												cell.getContext(),
 											)}
 										</TableCell>
 									))}
@@ -122,5 +122,5 @@ export function DataTable<TData, TValue>({
 				</Button>
 			</div>
 		</div>
-	)
+	);
 }

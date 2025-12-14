@@ -1,17 +1,16 @@
-import { Link } from "react-router"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Link } from "react-router";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -19,28 +18,29 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
-import { useAuth } from "@/hooks/use-auth"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
 
 const forgotPasswordSchema = z.object({
 	email: z.string().email("Invalid email address"),
-})
+});
 
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
-	const { forgotPassword, isLoading, error, clearError } = useAuth()
+	const { forgotPassword, isLoading, error, clearError } = useAuth();
 
 	const form = useForm<ForgotPasswordFormValues>({
 		resolver: zodResolver(forgotPasswordSchema),
 		defaultValues: {
 			email: "",
 		},
-	})
+	});
 
 	async function onSubmit(data: ForgotPasswordFormValues) {
 		try {
-			await forgotPassword(data)
+			await forgotPassword(data);
 		} catch {
 			// Error handled in hook
 		}
@@ -108,5 +108,5 @@ export default function ForgotPassword() {
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

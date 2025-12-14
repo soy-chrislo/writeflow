@@ -1,0 +1,36 @@
+GetUploadUrlRequest:
+  type: object
+  required:
+    - slug
+  properties:
+    slug:
+      type: string
+      description: Post slug for the content file
+      example: my-first-blog-post
+    contentType:
+      type: string
+      description: Content type of the file
+      default: text/html
+      example: text/html
+
+UploadUrlResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          description: Presigned S3 URL for uploading content
+          example: https://bucket.s3.amazonaws.com/posts/user-id/my-post.html?...
+        contentKey:
+          type: string
+          description: S3 key where the content will be stored
+          example: posts/user-id/my-first-blog-post.html
+        expiresIn:
+          type: integer
+          description: URL expiration time in seconds
+          example: 300

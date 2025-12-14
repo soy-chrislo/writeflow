@@ -1,2 +1,2 @@
-export { Layout } from "./Layout"
-export { AppSidebar } from "./AppSidebar"
+export { AppSidebar } from "./AppSidebar";
+export { Layout } from "./Layout";

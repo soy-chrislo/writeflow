@@ -1,110 +1,114 @@
-import { useState, useCallback } from "react"
-import { useEditor, EditorContent } from "@tiptap/react"
-import { extensions } from "./extensions"
-import { sanitizeHTML } from "@/lib/sanitize"
-import Toolbar from "./Toolbar"
-import Preview from "./Preview"
+import { EditorContent, useEditor } from "@tiptap/react";
+import { useCallback, useEffect, useState } from "react";
+import { sanitizeHTML } from "@/lib/sanitize";
+import { extensions } from "./extensions";
+import Preview from "./Preview";
+import Toolbar from "./Toolbar";
 
-const INITIAL_CONTENT = `
-<h1>Welcome to Writeflow</h1>
-<p>This is a <strong>rich text editor</strong> with live preview. Try out the formatting options:</p>
-
-<h2>Text Formatting</h2>
-<p>You can make text <strong>bold</strong>, <em>italic</em>, <u>underlined</u>, or <s>strikethrough</s>.</p>
-
-<h3>Headings</h3>
-<p>Use H1 through H6 for document structure.</p>
-
-<h4>Lists</h4>
-<ul>
-  <li>Bullet point one</li>
-  <li>Bullet point two</li>
-</ul>
-
-<ol>
-  <li>Numbered item one</li>
-  <li>Numbered item two</li>
-</ol>
-
-<h5>Code</h5>
-<p>Inline <code>code</code> or code blocks:</p>
-<pre><code>const greeting = "Hello, World!"
-console.log(greeting)</code></pre>
-
-<h6>Blockquotes</h6>
-<blockquote>This is a blockquote. Use it for citations or emphasis.</blockquote>
-
-<p>You can also add <a href="https://example.com">links</a> to your content.</p>
-`
+const DEFAULT_CONTENT = "<p></p>";
 
 export interface EditorRef {
-	getContent: () => string
-	getSanitizedContent: () => string
+	getContent: () => string;
+	getSanitizedContent: () => string;
 }
 
 interface EditorProps {
-	onContentChange?: (content: string, sanitizedContent: string) => void
+	/** Initial HTML content to load in the editor */
+	initialContent?: string;
+	/** Callback when content changes */
+	onContentChange?: (content: string, sanitizedContent: string) => void;
+	/** Placeholder text when editor is empty */
+	placeholder?: string;
+	/** Whether the editor is read-only */
+	readOnly?: boolean;
+	/** Whether to show the preview panel */
+	showPreview?: boolean;
+	/** Whether to show the debug panel */
+	showDebug?: boolean;
 }
 
-const Editor = ({ onContentChange }: EditorProps) => {
-	const [content, setContent] = useState(INITIAL_CONTENT)
-	const [, forceUpdate] = useState(0)
+const Editor = ({
+	initialContent,
+	onContentChange,
+	placeholder: _placeholder,
+	readOnly = false,
+	showPreview = true,
+	showDebug = false,
+}: EditorProps) => {
+	const startingContent = initialContent || DEFAULT_CONTENT;
+	const [content, setContent] = useState(startingContent);
+	const [, forceUpdate] = useState(0);
 
 	const handleSelectionUpdate = useCallback(() => {
-		forceUpdate((n) => n + 1)
-	}, [])
+		forceUpdate((n) => n + 1);
+	}, []);
 
 	const editor = useEditor({
 		extensions,
-		content: INITIAL_CONTENT,
-		autofocus: true,
+		content: startingContent,
+		autofocus: !readOnly,
+		editable: !readOnly,
 		editorProps: {
 			attributes: {
 				class: "content-body outline-none min-h-[400px] p-4",
 			},
 		},
 		onUpdate: ({ editor }) => {
-			const rawHTML = editor.getHTML()
-			const sanitized = sanitizeHTML(rawHTML)
-			setContent(rawHTML)
-			onContentChange?.(rawHTML, sanitized)
+			const rawHTML = editor.getHTML();
+			const sanitized = sanitizeHTML(rawHTML);
+			setContent(rawHTML);
+			onContentChange?.(rawHTML, sanitized);
 		},
 		onSelectionUpdate: handleSelectionUpdate,
 		onTransaction: handleSelectionUpdate,
-	})
+	});
+
+	// Update editor content when initialContent changes (for edit mode)
+	useEffect(() => {
+		if (editor && initialContent && editor.getHTML() !== initialContent) {
+			editor.commands.setContent(initialContent);
+			setContent(initialContent);
+		}
+	}, [editor, initialContent]);
 
 	const getSanitizedContent = useCallback(() => {
-		return sanitizeHTML(content)
-	}, [content])
+		return sanitizeHTML(content);
+	}, [content]);
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="grid grid-cols-2 gap-4 h-[600px]">
+			<div
+				className={`grid gap-4 h-[600px] ${showPreview ? "grid-cols-2" : "grid-cols-1"}`}
+			>
 				{/* Editor */}
-				<div className="border border-gray-300 rounded-lg overflow-hidden flex flex-col">
-					<Toolbar editor={editor} />
+				<div className="border border-border rounded-lg overflow-hidden flex flex-col">
+					{!readOnly && <Toolbar editor={editor} />}
 					<div className="flex-1 overflow-auto">
 						<EditorContent editor={editor} />
 					</div>
 				</div>
 
 				{/* Preview */}
-				<div className="border border-gray-300 rounded-lg overflow-hidden">
-					<Preview content={content} />
-				</div>
+				{showPreview && (
+					<div className="border border-border rounded-lg overflow-hidden">
+						<Preview content={content} />
+					</div>
+				)}
 			</div>
 
 			{/* Debug: Show sanitized output */}
-			<details className="text-sm">
-				<summary className="cursor-pointer text-gray-500 hover:text-gray-700">
-					View sanitized HTML (for API)
-				</summary>
-				<pre className="mt-2 p-4 bg-gray-100 rounded-lg overflow-auto max-h-[200px] text-xs">
-					{getSanitizedContent()}
-				</pre>
-			</details>
+			{showDebug && (
+				<details className="text-sm">
+					<summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+						View sanitized HTML (for API)
+					</summary>
+					<pre className="mt-2 p-4 bg-muted rounded-lg overflow-auto max-h-[200px] text-xs">
+						{getSanitizedContent()}
+					</pre>
+				</details>
+			)}
 		</div>
-	)
-}
+	);
+};
 
-export default Editor
+export default Editor;

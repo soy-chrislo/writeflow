@@ -1,4 +1,4 @@
-import DOMPurify from "dompurify"
+import DOMPurify from "dompurify";
 
 const ALLOWED_TAGS = [
 	"p",
@@ -20,13 +20,13 @@ const ALLOWED_TAGS = [
 	"pre",
 	"blockquote",
 	"br",
-]
+];
 
-const ALLOWED_ATTR = ["href", "target", "rel"]
+const ALLOWED_ATTR = ["href", "target", "rel"];
 
 export function sanitizeHTML(html: string): string {
 	return DOMPurify.sanitize(html, {
 		ALLOWED_TAGS,
 		ALLOWED_ATTR,
-	})
+	});
 }

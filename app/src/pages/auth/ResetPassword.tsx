@@ -1,18 +1,17 @@
-import { useEffect } from "react"
-import { Link, useNavigate } from "react-router"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -20,15 +19,16 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
 	InputOTP,
 	InputOTPGroup,
-	InputOTPSlot,
 	InputOTPSeparator,
-} from "@/components/ui/input-otp"
-import { useAuth } from "@/hooks/use-auth"
-import { passwordSchema } from "@/lib/validations"
+	InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { useAuth } from "@/hooks/use-auth";
+import { passwordSchema } from "@/lib/validations";
 
 const resetPasswordSchema = z
 	.object({
@@ -39,14 +39,14 @@ const resetPasswordSchema = z
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords don't match",
 		path: ["confirmPassword"],
-	})
+	});
 
-type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
-	const navigate = useNavigate()
+	const navigate = useNavigate();
 	const { pendingEmail, resetPassword, isLoading, error, clearError } =
-		useAuth()
+		useAuth();
 
 	const form = useForm<ResetPasswordFormValues>({
 		resolver: zodResolver(resetPasswordSchema),
@@ -55,30 +55,30 @@ export default function ResetPassword() {
 			password: "",
 			confirmPassword: "",
 		},
-	})
+	});
 
 	useEffect(() => {
 		if (!pendingEmail) {
-			navigate("/auth/forgot-password")
+			navigate("/auth/forgot-password");
 		}
-	}, [pendingEmail, navigate])
+	}, [pendingEmail, navigate]);
 
 	async function onSubmit(data: ResetPasswordFormValues) {
-		if (!pendingEmail) return
+		if (!pendingEmail) return;
 
 		try {
 			await resetPassword({
 				email: pendingEmail,
 				code: data.code,
 				newPassword: data.password,
-			})
+			});
 		} catch {
 			// Error handled in hook
 		}
 	}
 
 	if (!pendingEmail) {
-		return null
+		return null;
 	}
 
 	return (
@@ -115,10 +115,7 @@ export default function ResetPassword() {
 									<FormItem className="flex flex-col items-center">
 										<FormLabel>Verification Code</FormLabel>
 										<FormControl>
-											<InputOTP
-												maxLength={6}
-												{...field}
-											>
+											<InputOTP maxLength={6} {...field}>
 												<InputOTPGroup>
 													<InputOTPSlot index={0} />
 													<InputOTPSlot index={1} />
@@ -193,5 +190,5 @@ export default function ResetPassword() {
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

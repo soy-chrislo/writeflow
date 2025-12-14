@@ -1,16 +1,16 @@
-import { useEffect } from "react"
-import { Link, useNavigate } from "react-router"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "@/components/ui/button"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -18,23 +18,23 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form";
 import {
 	InputOTP,
 	InputOTPGroup,
-	InputOTPSlot,
 	InputOTPSeparator,
-} from "@/components/ui/input-otp"
-import { useAuth } from "@/hooks/use-auth"
+	InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { useAuth } from "@/hooks/use-auth";
 
 const confirmSchema = z.object({
 	code: z.string().length(6, "Code must be 6 digits"),
-})
+});
 
-type ConfirmFormValues = z.infer<typeof confirmSchema>
+type ConfirmFormValues = z.infer<typeof confirmSchema>;
 
 export default function ConfirmCode() {
-	const navigate = useNavigate()
+	const navigate = useNavigate();
 	const {
 		pendingEmail,
 		confirmCode,
@@ -42,46 +42,46 @@ export default function ConfirmCode() {
 		isLoading,
 		error,
 		clearError,
-	} = useAuth()
+	} = useAuth();
 
 	const form = useForm<ConfirmFormValues>({
 		resolver: zodResolver(confirmSchema),
 		defaultValues: {
 			code: "",
 		},
-	})
+	});
 
 	useEffect(() => {
 		if (!pendingEmail) {
-			navigate("/auth/login")
+			navigate("/auth/login");
 		}
-	}, [pendingEmail, navigate])
+	}, [pendingEmail, navigate]);
 
 	async function onSubmit(data: ConfirmFormValues) {
-		if (!pendingEmail) return
+		if (!pendingEmail) return;
 
 		try {
 			await confirmCode({
 				email: pendingEmail,
 				code: data.code,
-			})
+			});
 		} catch {
 			// Error handled in hook
 		}
 	}
 
 	async function handleResend() {
-		if (!pendingEmail) return
+		if (!pendingEmail) return;
 
 		try {
-			await resendCode(pendingEmail)
+			await resendCode(pendingEmail);
 		} catch {
 			// Error handled in hook
 		}
 	}
 
 	if (!pendingEmail) {
-		return null
+		return null;
 	}
 
 	return (
@@ -117,10 +117,7 @@ export default function ConfirmCode() {
 									<FormItem className="flex flex-col items-center">
 										<FormLabel>Verification Code</FormLabel>
 										<FormControl>
-											<InputOTP
-												maxLength={6}
-												{...field}
-											>
+											<InputOTP maxLength={6} {...field}>
 												<InputOTPGroup>
 													<InputOTPSlot index={0} />
 													<InputOTPSlot index={1} />
@@ -168,5 +165,5 @@ export default function ConfirmCode() {
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

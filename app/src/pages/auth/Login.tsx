@@ -1,16 +1,16 @@
-import { Link } from "react-router"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from "react-router";
+import { toast } from "sonner";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -18,19 +18,25 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
-import { useAuth } from "@/hooks/use-auth"
-import { passwordSchema } from "@/lib/validations"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { passwordSchema } from "@/lib/validations";
 
 const loginSchema = z.object({
 	email: z.string().email("Invalid email address"),
 	password: passwordSchema,
-})
+});
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
-	const { login, isLoading, error, clearError } = useAuth()
+	const { login, isLoading, error, clearError } = useAuth();
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	// Obtener returnUrl del state (guardado por ProtectedRoute)
+	const from = (location.state as { from?: string })?.from || "/dashboard";
 
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(loginSchema),
@@ -38,11 +44,13 @@ export default function Login() {
 			email: "",
 			password: "",
 		},
-	})
+	});
 
 	async function onSubmit(data: LoginFormValues) {
 		try {
-			await login(data)
+			await login(data, { skipNavigate: true });
+			toast.success("Sesión iniciada correctamente");
+			navigate(from, { replace: true });
 		} catch {
 			// Error handled in hook
 		}
@@ -134,5 +142,5 @@ export default function Login() {
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

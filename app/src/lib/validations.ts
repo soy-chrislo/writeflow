@@ -1,4 +1,17 @@
-import { z } from "zod"
+import { z } from "zod";
+
+/**
+ * Post form validation schema
+ */
+export const postFormSchema = z.object({
+	title: z
+		.string()
+		.min(1, "El título es obligatorio")
+		.max(200, "El título no puede exceder 200 caracteres"),
+	content: z.string(),
+});
+
+export type PostFormValues = z.infer<typeof postFormSchema>;
 
 /**
  * AWS Cognito default password requirements:
@@ -18,5 +31,5 @@ export const passwordSchema = z
 	.regex(/[0-9]/, "Password must contain at least one number")
 	.regex(
 		/[^a-zA-Z0-9]/,
-		"Password must contain at least one special character"
-	)
+		"Password must contain at least one special character",
+	);

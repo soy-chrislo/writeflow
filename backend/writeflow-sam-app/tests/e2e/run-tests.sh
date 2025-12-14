@@ -101,24 +101,26 @@ echo ""
 
 # Get access token if running auth tests
 if [ "$RUN_AUTH_TESTS" = true ]; then
-    echo -e "${YELLOW}Obtaining access token for user 1...${NC}"
+    echo -e "${YELLOW}Obtaining tokens for user 1...${NC}"
 
-    # Note: Cognito User Pool Authorizer requires ID Token, not Access Token
-    TOKEN_RESPONSE=$(aws cognito-idp initiate-auth \
+    # Get full authentication result (ID Token + Refresh Token)
+    AUTH_RESULT=$(aws cognito-idp initiate-auth \
         --auth-flow USER_PASSWORD_AUTH \
         --client-id "$client_id" \
         --auth-parameters USERNAME="$test_email",PASSWORD="$test_password" \
-        --query 'AuthenticationResult.IdToken' \
-        --output text 2>/dev/null)
+        --query 'AuthenticationResult' \
+        --output json 2>/dev/null)
 
-    if [ -z "$TOKEN_RESPONSE" ] || [ "$TOKEN_RESPONSE" == "None" ]; then
-        echo -e "${RED}Failed to obtain access token for user 1${NC}"
+    if [ -z "$AUTH_RESULT" ] || [ "$AUTH_RESULT" == "null" ]; then
+        echo -e "${RED}Failed to obtain tokens for user 1${NC}"
         echo "Make sure the test user exists. Run: ./auth/create-test-user.sh"
         exit 1
     fi
 
-    ACCESS_TOKEN="$TOKEN_RESPONSE"
-    echo -e "${GREEN}Access token for user 1 obtained successfully${NC}"
+    # Note: Cognito User Pool Authorizer requires ID Token, not Access Token
+    ACCESS_TOKEN=$(echo "$AUTH_RESULT" | jq -r '.IdToken')
+    REFRESH_TOKEN=$(echo "$AUTH_RESULT" | jq -r '.RefreshToken')
+    echo -e "${GREEN}Tokens for user 1 obtained successfully${NC}"
 
     # Get second user token for cross-user security tests
     if [ -n "$test_email_2" ] && [ -n "$test_password_2" ]; then
@@ -153,6 +155,7 @@ HURL_OPTS=(--test --variables-file "$VARS_FILE" --variable "timestamp=$TIMESTAMP
 
 if [ "$RUN_AUTH_TESTS" = true ]; then
     HURL_OPTS+=(--variable "access_token=$ACCESS_TOKEN")
+    HURL_OPTS+=(--variable "refresh_token=$REFRESH_TOKEN")
     if [ -n "$ACCESS_TOKEN_2" ]; then
         HURL_OPTS+=(--variable "access_token_2=$ACCESS_TOKEN_2")
     fi
@@ -195,6 +198,11 @@ else
     run_hurl "${HURL_OPTS[@]}" \
         "$SCRIPT_DIR/posts/"*.hurl \
         "$SCRIPT_DIR/upload/"*.hurl
+
+    # Run auth tests
+    echo ""
+    echo -e "${BLUE}Auth endpoint tests:${NC}"
+    run_hurl "${HURL_OPTS[@]}" "$SCRIPT_DIR/auth/"*.hurl
 
     # Run flow tests sequentially
     echo ""

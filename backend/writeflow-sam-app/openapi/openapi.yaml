@@ -1,0 +1,108 @@
+openapi: '3.0.1'
+info:
+  title: Writeflow CMS API
+  description: Serverless CMS API for content management
+  version: '1.0.0'
+  contact:
+    name: Writeflow
+
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      apiId:
+        default: api-id
+      region:
+        default: us-east-1
+      stage:
+        default: dev
+
+paths:
+  /posts:
+    $ref: 'paths/posts.yaml#/posts'
+  /posts/{slug}:
+    $ref: 'paths/posts.yaml#/posts-by-slug'
+  /my/posts:
+    $ref: 'paths/posts.yaml#/my-posts'
+  /my/posts/{slug}:
+    $ref: 'paths/posts.yaml#/my-posts-by-slug'
+  /upload-url:
+    $ref: 'paths/upload.yaml#/upload-url'
+  /auth/register:
+    $ref: 'paths/auth.yaml#/auth-register'
+  /auth/confirm:
+    $ref: 'paths/auth.yaml#/auth-confirm'
+  /auth/login:
+    $ref: 'paths/auth.yaml#/auth-login'
+  /auth/refresh:
+    $ref: 'paths/auth.yaml#/auth-refresh'
+  /auth/resend-code:
+    $ref: 'paths/auth.yaml#/auth-resend-code'
+  /auth/forgot-password:
+    $ref: 'paths/auth.yaml#/auth-forgot-password'
+  /auth/reset-password:
+    $ref: 'paths/auth.yaml#/auth-reset-password'
+
+components:
+  securitySchemes:
+    CognitoAuthorizer:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - Fn::GetAtt: [WriteflowUserPool, Arn]
+
+  schemas:
+    # Common
+    SuccessResponse:
+      $ref: 'schemas/common.yaml#/SuccessResponse'
+    ErrorResponse:
+      $ref: 'schemas/common.yaml#/ErrorResponse'
+
+    # Post schemas
+    CreatePostRequest:
+      $ref: 'schemas/post.yaml#/CreatePostRequest'
+    UpdatePostRequest:
+      $ref: 'schemas/post.yaml#/UpdatePostRequest'
+    Post:
+      $ref: 'schemas/post.yaml#/Post'
+    PostWithContent:
+      $ref: 'schemas/post.yaml#/PostWithContent'
+    PostResponse:
+      $ref: 'schemas/post.yaml#/PostResponse'
+    PostWithContentResponse:
+      $ref: 'schemas/post.yaml#/PostWithContentResponse'
+    PostListResponse:
+      $ref: 'schemas/post.yaml#/PostListResponse'
+
+    # Upload schemas
+    GetUploadUrlRequest:
+      $ref: 'schemas/upload.yaml#/GetUploadUrlRequest'
+    UploadUrlResponse:
+      $ref: 'schemas/upload.yaml#/UploadUrlResponse'
+
+    # Auth schemas
+    RegisterRequest:
+      $ref: 'schemas/auth.yaml#/RegisterRequest'
+    RegisterResponse:
+      $ref: 'schemas/auth.yaml#/RegisterResponse'
+    ConfirmRequest:
+      $ref: 'schemas/auth.yaml#/ConfirmRequest'
+    LoginRequest:
+      $ref: 'schemas/auth.yaml#/LoginRequest'
+    LoginResponse:
+      $ref: 'schemas/auth.yaml#/LoginResponse'
+    RefreshTokenRequest:
+      $ref: 'schemas/auth.yaml#/RefreshTokenRequest'
+    RefreshTokenResponse:
+      $ref: 'schemas/auth.yaml#/RefreshTokenResponse'
+    ResendCodeRequest:
+      $ref: 'schemas/auth.yaml#/ResendCodeRequest'
+    CodeDeliveryResponse:
+      $ref: 'schemas/auth.yaml#/CodeDeliveryResponse'
+    ForgotPasswordRequest:
+      $ref: 'schemas/auth.yaml#/ForgotPasswordRequest'
+    ResetPasswordRequest:
+      $ref: 'schemas/auth.yaml#/ResetPasswordRequest'

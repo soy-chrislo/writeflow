@@ -1,0 +1,20 @@
+SuccessResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    message:
+      type: string
+      example: Operation completed successfully
+
+ErrorResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: false
+    error:
+      type: string
+      description: Error message
+      example: Post not found

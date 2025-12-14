@@ -1,0 +1,14 @@
+apis:
+  main:
+    root: openapi/openapi.yaml
+
+rules:
+  no-unresolved-refs: error
+  no-unused-components: warn
+  operation-operationId: error
+  operation-summary: error
+  path-not-include-query: error
+  tag-description: off
+
+extends:
+  - recommended

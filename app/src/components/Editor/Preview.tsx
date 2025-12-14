@@ -1,5 +1,5 @@
 interface PreviewProps {
-	content: string
+	content: string;
 }
 
 const Preview = ({ content }: PreviewProps) => {
@@ -13,7 +13,7 @@ const Preview = ({ content }: PreviewProps) => {
 				dangerouslySetInnerHTML={{ __html: content }}
 			/>
 		</div>
-	)
-}
+	);
+};
 
-export default Preview
+export default Preview;

@@ -1,2 +1,2 @@
-export { usePostsStore } from "./posts"
-export { useEditorStore } from "./editor"
+export { useEditorStore } from "./editor";
+export { usePostsStore } from "./posts";

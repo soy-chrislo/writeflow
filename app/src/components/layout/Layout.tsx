@@ -1,14 +1,16 @@
-import { Outlet } from "react-router"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "./AppSidebar"
+import { Outlet } from "react-router";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "./AppSidebar";
 
 export function Layout() {
 	return (
 		<SidebarProvider>
 			<AppSidebar />
 			<SidebarInset>
-				<Outlet />
+				<main className="p-6">
+					<Outlet />
+				</main>
 			</SidebarInset>
 		</SidebarProvider>
-	)
+	);
 }

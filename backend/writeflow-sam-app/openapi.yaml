@@ -1,11 +1,10 @@
-openapi: '3.0.1'
+openapi: 3.0.1
 info:
   title: Writeflow CMS API
   description: Serverless CMS API for content management
-  version: '1.0.0'
+  version: 1.0.0
   contact:
     name: Writeflow
-
 servers:
   - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
     variables:
@@ -15,9 +14,38 @@ servers:
         default: us-east-1
       stage:
         default: dev
-
 paths:
   /posts:
+    options:
+      summary: CORS support for /posts
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
       summary: List published posts
       description: Returns a list of all published posts (public endpoint)
@@ -57,7 +85,6 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
     post:
       summary: Create a new post
       description: Creates a new post (requires authentication)
@@ -103,8 +130,43 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreatePostFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
   /posts/{slug}:
+    options:
+      summary: CORS support for /posts/{slug}
+      tags:
+        - CORS
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''GET,PUT,DELETE,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
       summary: Get a post by slug
       description: Returns a single post with its content (public endpoint for published posts)
@@ -144,7 +206,6 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
     put:
       summary: Update a post
       description: Updates an existing post (requires authentication, must be post owner)
@@ -209,7 +270,6 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdatePostFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
     delete:
       summary: Delete a post
       description: Deletes an existing post (requires authentication, must be post owner)
@@ -262,8 +322,37 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeletePostFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
   /my/posts:
+    options:
+      summary: CORS support for /my/posts
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
       summary: List my posts
       description: Returns all posts for the authenticated user (drafts and published)
@@ -318,8 +407,43 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
   /my/posts/{slug}:
+    options:
+      summary: CORS support for /my/posts/{slug}
+      tags:
+        - CORS
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
       summary: Get my post by slug
       description: Returns a single post with its content (authenticated endpoint for owner access to any status)
@@ -366,8 +490,37 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
   /upload-url:
+    options:
+      summary: CORS support for /upload-url
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
       summary: Get presigned URL for content upload
       description: Returns a presigned S3 URL for uploading post content directly from the frontend
@@ -413,7 +566,561 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
         passthroughBehavior: when_no_match
-
+  /auth/register:
+    options:
+      summary: CORS support for /auth/register
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Register a new user
+      description: |
+        Creates a new user account. A confirmation code will be sent to the
+        provided email address. Use /auth/confirm to verify the account.
+      operationId: register
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Invalid request (missing fields or invalid email/password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/confirm:
+    options:
+      summary: CORS support for /auth/confirm
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Confirm user registration
+      description: |
+        Confirms a user's email address using the confirmation code sent during registration.
+      operationId: confirmRegistration
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+      responses:
+        '200':
+          description: Account confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired confirmation code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/login:
+    options:
+      summary: CORS support for /auth/login
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Login user
+      description: |
+        Authenticates a user with email and password. Returns access, ID, and refresh tokens.
+      operationId: login
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Account not confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LoginFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/refresh:
+    options:
+      summary: CORS support for /auth/refresh
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Refresh authentication tokens
+      description: |
+        Exchanges a refresh token for new access and ID tokens.
+        The refresh token is sent in the request body (not as a cookie).
+        This endpoint does not require authentication.
+      operationId: refreshToken
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: Invalid request (missing or malformed refresh token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RefreshTokenFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/resend-code:
+    options:
+      summary: CORS support for /auth/resend-code
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Resend confirmation code
+      description: |
+        Resends the email confirmation code. Use this when the original code
+        expired or the user didn't receive it.
+      operationId: resendCode
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendCodeRequest'
+      responses:
+        '200':
+          description: Confirmation code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeDeliveryResponse'
+        '400':
+          description: User is already confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResendCodeFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/forgot-password:
+    options:
+      summary: CORS support for /auth/forgot-password
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Request password reset
+      description: |
+        Initiates the password reset process. A reset code will be sent to
+        the user's email address.
+      operationId: forgotPassword
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset code sent (if account exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeDeliveryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ForgotPasswordFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+  /auth/reset-password:
+    options:
+      summary: CORS support for /auth/reset-password
+      tags:
+        - CORS
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: never
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+    post:
+      summary: Reset password with code
+      description: |
+        Completes the password reset process using the code sent via email.
+      operationId: resetPassword
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired reset code, or password doesn't meet requirements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResetPasswordFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
 components:
   securitySchemes:
     CognitoAuthorizer:
@@ -424,46 +1131,29 @@ components:
       x-amazon-apigateway-authorizer:
         type: cognito_user_pools
         providerARNs:
-          - Fn::GetAtt: [WriteflowUserPool, Arn]
-
+          - Fn::GetAtt:
+              - WriteflowUserPool
+              - Arn
   schemas:
-    GetUploadUrlRequest:
-      type: object
-      required:
-        - slug
-      properties:
-        slug:
-          type: string
-          description: Post slug for the content file
-          example: my-first-blog-post
-        contentType:
-          type: string
-          description: Content type of the file
-          default: text/html
-          example: text/html
-
-    UploadUrlResponse:
+    SuccessResponse:
       type: object
       properties:
         success:
           type: boolean
           example: true
-        data:
-          type: object
-          properties:
-            uploadUrl:
-              type: string
-              description: Presigned S3 URL for uploading content
-              example: https://bucket.s3.amazonaws.com/posts/user-id/my-post.html?...
-            contentKey:
-              type: string
-              description: S3 key where the content will be stored
-              example: posts/user-id/my-first-blog-post.html
-            expiresIn:
-              type: integer
-              description: URL expiration time in seconds
-              example: 300
-
+        message:
+          type: string
+          example: Operation completed successfully
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: Post not found
     CreatePostRequest:
       type: object
       required:
@@ -487,7 +1177,6 @@ components:
             - published
           default: draft
           description: Post status
-
     UpdatePostRequest:
       type: object
       properties:
@@ -506,7 +1195,6 @@ components:
             - draft
             - published
           description: Post status
-
     Post:
       type: object
       properties:
@@ -539,7 +1227,6 @@ components:
           type: string
           format: date-time
           description: Publication timestamp (if published)
-
     PostWithContent:
       allOf:
         - $ref: '#/components/schemas/Post'
@@ -548,7 +1235,6 @@ components:
             content:
               type: string
               description: HTML content of the post
-
     PostResponse:
       type: object
       properties:
@@ -557,7 +1243,6 @@ components:
           example: true
         data:
           $ref: '#/components/schemas/Post'
-
     PostWithContentResponse:
       type: object
       properties:
@@ -566,7 +1251,6 @@ components:
           example: true
         data:
           $ref: '#/components/schemas/PostWithContent'
-
     PostListResponse:
       type: object
       properties:
@@ -583,24 +1267,226 @@ components:
             nextToken:
               type: string
               description: Pagination token for next page
-
-    SuccessResponse:
+    GetUploadUrlRequest:
+      type: object
+      required:
+        - slug
+      properties:
+        slug:
+          type: string
+          description: Post slug for the content file
+          example: my-first-blog-post
+        contentType:
+          type: string
+          description: Content type of the file
+          default: text/html
+          example: text/html
+    UploadUrlResponse:
       type: object
       properties:
         success:
           type: boolean
           example: true
-        message:
+        data:
+          type: object
+          properties:
+            uploadUrl:
+              type: string
+              description: Presigned S3 URL for uploading content
+              example: https://bucket.s3.amazonaws.com/posts/user-id/my-post.html?...
+            contentKey:
+              type: string
+              description: S3 key where the content will be stored
+              example: posts/user-id/my-first-blog-post.html
+            expiresIn:
+              type: integer
+              description: URL expiration time in seconds
+              example: 300
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
           type: string
-          example: Operation completed successfully
-
-    ErrorResponse:
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Password (min 8 chars, uppercase, lowercase, numbers)
+          example: MyP@ssw0rd
+    RegisterResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: false
-        error:
+          example: true
+        data:
+          type: object
+          properties:
+            userId:
+              type: string
+              description: Cognito user ID
+              example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+            email:
+              type: string
+              format: email
+              description: Registered email address
+              example: user@example.com
+            confirmed:
+              type: boolean
+              description: Whether the account is confirmed
+              example: false
+    ConfirmRequest:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
           type: string
-          description: Error message
-          example: Post not found
+          format: email
+          description: User's email address
+          example: user@example.com
+        code:
+          type: string
+          description: 6-digit confirmation code from email
+          example: '123456'
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User's password
+          example: MyP@ssw0rd
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              description: JWT access token
+              example: eyJraWQiOiJ...
+            idToken:
+              type: string
+              description: JWT ID token (use this for API Gateway authorization)
+              example: eyJraWQiOiJ...
+            refreshToken:
+              type: string
+              description: Refresh token for obtaining new access tokens
+              example: eyJjdHkiOiJKV1Qi...
+            expiresIn:
+              type: integer
+              description: Token expiration time in seconds
+              example: 3600
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token obtained during login
+          example: eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ...
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              description: New JWT access token
+              example: eyJraWQiOiJ...
+            idToken:
+              type: string
+              description: New JWT ID token (use this for API Gateway authorization)
+              example: eyJraWQiOiJ...
+            expiresIn:
+              type: integer
+              description: Token expiration time in seconds
+              example: 3600
+    ResendCodeRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+    CodeDeliveryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Success message
+              example: Confirmation code sent
+            destination:
+              type: string
+              description: Masked destination (email)
+              example: u***@e***.com
+            deliveryMedium:
+              type: string
+              description: Delivery method
+              example: EMAIL
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+    ResetPasswordRequest:
+      type: object
+      required:
+        - email
+        - code
+        - newPassword
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        code:
+          type: string
+          description: 6-digit reset code from email
+          example: '123456'
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          description: New password (min 8 chars, uppercase, lowercase, numbers)
+          example: MyNewP@ssw0rd

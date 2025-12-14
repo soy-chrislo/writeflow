@@ -1,22 +1,22 @@
-import { create } from "zustand"
-import { devtools } from "zustand/middleware"
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
 interface EditorState {
 	// Editor content
-	content: string
-	sanitizedContent: string
-	isDirty: boolean
+	content: string;
+	sanitizedContent: string;
+	isDirty: boolean;
 
 	// Post metadata
-	title: string
-	slug: string | null
+	title: string;
+	slug: string | null;
 
 	// Actions
-	setContent: (content: string, sanitizedContent: string) => void
-	setTitle: (title: string) => void
-	setSlug: (slug: string | null) => void
-	resetEditor: () => void
-	markClean: () => void
+	setContent: (content: string, sanitizedContent: string) => void;
+	setTitle: (title: string) => void;
+	setSlug: (slug: string | null) => void;
+	resetEditor: () => void;
+	markClean: () => void;
 }
 
 const initialState = {
@@ -25,7 +25,7 @@ const initialState = {
 	isDirty: false,
 	title: "",
 	slug: null,
-}
+};
 
 export const useEditorStore = create<EditorState>()(
 	devtools(
@@ -43,6 +43,6 @@ export const useEditorStore = create<EditorState>()(
 
 			markClean: () => set({ isDirty: false }),
 		}),
-		{ name: "editor-store" }
-	)
-)
+		{ name: "editor-store" },
+	),
+);

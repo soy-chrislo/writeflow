@@ -1,0 +1,119 @@
+CreatePostRequest:
+  type: object
+  required:
+    - title
+    - contentKey
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: Post title
+      example: My First Blog Post
+    contentKey:
+      type: string
+      description: S3 key where the content was uploaded (obtained from /upload-url)
+      example: posts/user-id/my-first-blog-post.html
+    status:
+      type: string
+      enum:
+        - draft
+        - published
+      default: draft
+      description: Post status
+
+UpdatePostRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: Post title
+    contentKey:
+      type: string
+      description: S3 key where the new content was uploaded (obtained from /upload-url)
+      example: posts/user-id/my-first-blog-post.html
+    status:
+      type: string
+      enum:
+        - draft
+        - published
+      description: Post status
+
+Post:
+  type: object
+  properties:
+    slug:
+      type: string
+      description: URL-friendly identifier
+      example: my-first-blog-post
+    title:
+      type: string
+      description: Post title
+      example: My First Blog Post
+    authorId:
+      type: string
+      description: Author's Cognito sub
+    status:
+      type: string
+      enum:
+        - draft
+        - published
+      description: Post status
+    createdAt:
+      type: string
+      format: date-time
+      description: Creation timestamp
+    updatedAt:
+      type: string
+      format: date-time
+      description: Last update timestamp
+    publishedAt:
+      type: string
+      format: date-time
+      description: Publication timestamp (if published)
+
+PostWithContent:
+  allOf:
+    - $ref: 'post.yaml#/Post'
+    - type: object
+      properties:
+        content:
+          type: string
+          description: HTML content of the post
+
+PostResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      $ref: 'post.yaml#/Post'
+
+PostWithContentResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      $ref: 'post.yaml#/PostWithContent'
+
+PostListResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: 'post.yaml#/Post'
+        nextToken:
+          type: string
+          description: Pagination token for next page

@@ -1,0 +1,481 @@
+posts:
+  options:
+    summary: CORS support for /posts
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  get:
+    summary: List published posts
+    description: Returns a list of all published posts (public endpoint)
+    operationId: listPublicPosts
+    tags:
+      - Posts
+    security: []
+    parameters:
+      - name: limit
+        in: query
+        description: Maximum number of posts to return
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      - name: nextToken
+        in: query
+        description: Pagination token
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of published posts
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostListResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+  post:
+    summary: Create a new post
+    description: Creates a new post (requires authentication)
+    operationId: createPost
+    tags:
+      - Posts
+    security:
+      - CognitoAuthorizer: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/post.yaml#/CreatePostRequest'
+    responses:
+      '201':
+        description: Post created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreatePostFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+posts-by-slug:
+  options:
+    summary: CORS support for /posts/{slug}
+    tags:
+      - CORS
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,PUT,DELETE,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  get:
+    summary: Get a post by slug
+    description: Returns a single post with its content (public endpoint for published posts)
+    operationId: getPost
+    tags:
+      - Posts
+    security: []
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Post slug
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Post details
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostWithContentResponse'
+      '404':
+        description: Post not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+  put:
+    summary: Update a post
+    description: Updates an existing post (requires authentication, must be post owner)
+    operationId: updatePost
+    tags:
+      - Posts
+    security:
+      - CognitoAuthorizer: []
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Post slug
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/post.yaml#/UpdatePostRequest'
+    responses:
+      '200':
+        description: Post updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Forbidden - not post owner
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: Post not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdatePostFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+  delete:
+    summary: Delete a post
+    description: Deletes an existing post (requires authentication, must be post owner)
+    operationId: deletePost
+    tags:
+      - Posts
+    security:
+      - CognitoAuthorizer: []
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Post slug
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Post deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Forbidden - not post owner
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: Post not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeletePostFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+my-posts:
+  options:
+    summary: CORS support for /my/posts
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  get:
+    summary: List my posts
+    description: Returns all posts for the authenticated user (drafts and published)
+    operationId: listMyPosts
+    tags:
+      - Posts
+    security:
+      - CognitoAuthorizer: []
+    parameters:
+      - name: limit
+        in: query
+        description: Maximum number of posts to return
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      - name: status
+        in: query
+        description: Filter by status
+        schema:
+          type: string
+          enum:
+            - draft
+            - published
+      - name: nextToken
+        in: query
+        description: Pagination token
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of user's posts
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListPostsFunction.Arn}/invocations
+      passthroughBehavior: when_no_match
+
+my-posts-by-slug:
+  options:
+    summary: CORS support for /my/posts/{slug}
+    tags:
+      - CORS
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  get:
+    summary: Get my post by slug
+    description: Returns a single post with its content (authenticated endpoint for owner access to any status)
+    operationId: getMyPost
+    tags:
+      - Posts
+    security:
+      - CognitoAuthorizer: []
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Post slug
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Post details
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/post.yaml#/PostWithContentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: Post not found or not owned by user
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPostFunction.Arn}/invocations
+      passthroughBehavior: when_no_match

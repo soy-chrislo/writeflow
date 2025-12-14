@@ -1,17 +1,17 @@
-import { useCallback } from "react"
-import type { Editor } from "@tiptap/react"
-import type { Level } from "@tiptap/extension-heading"
+import type { Level } from "@tiptap/extension-heading";
+import type { Editor } from "@tiptap/react";
+import { useCallback } from "react";
 
 interface ToolbarProps {
-	editor: Editor | null
+	editor: Editor | null;
 }
 
 interface ToolbarButtonProps {
-	onClick: () => void
-	isActive?: boolean
-	disabled?: boolean
-	children: React.ReactNode
-	title: string
+	onClick: () => void;
+	isActive?: boolean;
+	disabled?: boolean;
+	children: React.ReactNode;
+	title: string;
 }
 
 const ToolbarButton = ({
@@ -33,41 +33,36 @@ const ToolbarButton = ({
 	>
 		{children}
 	</button>
-)
+);
 
-const ToolbarDivider = () => <div className="w-px h-6 bg-gray-300 mx-1" />
+const ToolbarDivider = () => <div className="w-px h-6 bg-gray-300 mx-1" />;
 
 const Toolbar = ({ editor }: ToolbarProps) => {
 	const setLink = useCallback(() => {
-		if (!editor) return
+		if (!editor) return;
 
-		const previousUrl = editor.getAttributes("link").href
-		const url = window.prompt("URL", previousUrl)
+		const previousUrl = editor.getAttributes("link").href;
+		const url = window.prompt("URL", previousUrl);
 
-		if (url === null) return
+		if (url === null) return;
 
 		if (url === "") {
-			editor.chain().focus().extendMarkRange("link").unsetLink().run()
-			return
+			editor.chain().focus().extendMarkRange("link").unsetLink().run();
+			return;
 		}
 
-		editor
-			.chain()
-			.focus()
-			.extendMarkRange("link")
-			.setLink({ href: url })
-			.run()
-	}, [editor])
+		editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+	}, [editor]);
 
 	const toggleHeading = useCallback(
 		(level: Level) => {
-			if (!editor) return
-			editor.chain().focus().toggleHeading({ level }).run()
+			if (!editor) return;
+			editor.chain().focus().toggleHeading({ level }).run();
 		},
-		[editor]
-	)
+		[editor],
+	);
 
-	if (!editor) return null
+	if (!editor) return null;
 
 	return (
 		<div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-300 bg-gray-50">
@@ -187,7 +182,7 @@ const Toolbar = ({ editor }: ToolbarProps) => {
 				&#8618;
 			</ToolbarButton>
 		</div>
-	)
-}
+	);
+};
 
-export default Toolbar
+export default Toolbar;

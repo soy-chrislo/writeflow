@@ -1,21 +1,21 @@
-import type { ColumnDef } from "@tanstack/react-table"
-import { format } from "date-fns"
-import { MoreHorizontal, Pencil, Eye, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import type { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import type { Post } from "@/types/post"
+} from "@/components/ui/dropdown-menu";
+import type { Post } from "@/types/post";
 
 interface ColumnsProps {
-	onEdit: (post: Post) => void
-	onView: (post: Post) => void
-	onDelete: (post: Post) => void
+	onEdit: (post: Post) => void;
+	onView: (post: Post) => void;
+	onDelete: (post: Post) => void;
 }
 
 export function getColumns({
@@ -28,67 +28,65 @@ export function getColumns({
 			accessorKey: "title",
 			header: "Title",
 			cell: ({ row }) => {
-				const title = row.getValue("title") as string
+				const title = row.getValue("title") as string;
 				return (
 					<div className="font-medium max-w-[300px] truncate" title={title}>
 						{title}
 					</div>
-				)
+				);
 			},
 		},
 		{
 			accessorKey: "slug",
 			header: "Slug",
 			cell: ({ row }) => {
-				const slug = row.getValue("slug") as string
+				const slug = row.getValue("slug") as string;
 				return (
-					<code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-						{slug}
-					</code>
-				)
+					<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{slug}</code>
+				);
 			},
 		},
 		{
 			accessorKey: "status",
 			header: "Status",
 			cell: ({ row }) => {
-				const status = row.getValue("status") as string
+				const status = row.getValue("status") as string;
 				return (
 					<Badge variant={status === "published" ? "default" : "secondary"}>
 						{status}
 					</Badge>
-				)
+				);
 			},
 		},
 		{
 			accessorKey: "createdAt",
 			header: "Created",
 			cell: ({ row }) => {
-				const date = row.getValue("createdAt") as string
+				const date = row.getValue("createdAt") as string;
 				return (
 					<span className="text-muted-foreground text-sm">
 						{format(new Date(date), "MMM d, yyyy")}
 					</span>
-				)
+				);
 			},
 		},
 		{
 			accessorKey: "updatedAt",
 			header: "Updated",
 			cell: ({ row }) => {
-				const date = row.getValue("updatedAt") as string
+				const date = row.getValue("updatedAt") as string;
 				return (
 					<span className="text-muted-foreground text-sm">
 						{format(new Date(date), "MMM d, yyyy")}
 					</span>
-				)
+				);
 			},
 		},
 		{
 			id: "actions",
 			header: () => <span className="sr-only">Actions</span>,
 			cell: ({ row }) => {
-				const post = row.original
+				const post = row.original;
 
 				return (
 					<DropdownMenu>
@@ -117,8 +115,8 @@ export function getColumns({
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-				)
+				);
 			},
 		},
-	]
+	];
 }

@@ -1,0 +1,18 @@
+{
+  "name": "writeflow-sam-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "openapi:bundle": "redocly bundle openapi/openapi.yaml -o openapi.yaml",
+    "openapi:lint": "redocly lint openapi/openapi.yaml",
+    "build": "npm run openapi:bundle && sam build",
+    "deploy": "npm run build && sam deploy",
+    "deploy:guided": "npm run build && sam deploy --guided",
+    "deploy:confirm": "npm run build && sam deploy --no-confirm-changeset",
+    "test:e2e": "cd tests/e2e && ./run-tests.sh",
+    "test:e2e:quick": "cd tests/e2e && ./run-tests.sh --quick"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.12.1"
+  }
+}

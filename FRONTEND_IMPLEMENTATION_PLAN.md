@@ -2,92 +2,186 @@
 
 ## Executive Summary
 
-El frontend actual tiene ~40% de completitud. La infraestructura está lista (servicios API, stores, componentes UI), pero faltan los flujos críticos de usuario para CRUD de posts.
+El frontend tiene **~85% de completitud**. Todas las funcionalidades core del MVP están implementadas:
+
+- ✅ Autenticación completa (login, registro, tokens, refresh)
+- ✅ CRUD de posts (crear, editar, listar, eliminar)
+- ✅ Publicar/Despublicar posts
+- ✅ Editor TipTap funcional con preview
+- ✅ Blog público (lista de posts sin auth)
+- ✅ Vista de post individual
+
+**Pendiente (nice-to-have):** Responsive mobile, accesibilidad, tests, optimizaciones de performance.
 
 ---
 
-## 1. AUTENTICACIÓN Y SEGURIDAD
+## 1. AUTENTICACIÓN Y SEGURIDAD ✅ COMPLETADO
 
-### 1.1 Route Guards (Auth Protection)
+> **Fecha de implementación:** 2025-12-02
+> **Implementado por:** Claude Code
 
-**Archivo:** `src/components/auth/ProtectedRoute.tsx`
+### 1.1 Route Guards (Auth Protection) ✅
+
+**Archivo creado:** `app/src/components/auth/ProtectedRoute.tsx`
+
+**Implementación:**
+- Componente wrapper que verifica `isAuthenticated` del store
+- Si no autenticado → redirect a `/auth/login` con `state.from` para returnUrl
+- Muestra `<Spinner>` mientras `isInitialized=false`
+- Integrado en `App.tsx` envolviendo el `<Layout>`
+
+**Rutas protegidas actualmente:**
+| Ruta | Requiere Auth | Estado |
+|------|---------------|--------|
+| `/` | Sí (editor) | ✅ Protegida |
+| `/posts` | Sí (mis posts) | ✅ Protegida |
+| `/posts/:slug` | Sí (ver post) | ✅ Protegida |
+| `/posts/new` | Sí | ⏳ Ruta no creada aún |
+| `/posts/:slug/edit` | Sí | ⏳ Ruta no creada aún |
+| `/auth/*` | No | ✅ Pública |
+
+### 1.2 Token Management ✅
+
+#### Decisiones Arquitectónicas
+
+| Decisión | Elección | Justificación |
+|----------|----------|---------------|
+| Token para Authorization | `idToken` | Backend ya valida idToken y extrae claims de usuario |
+| Almacenamiento | localStorage (Zustand persist) | Backend envía refreshToken en body, no en httpOnly cookie |
+| Estrategia de refresh | Híbrida (proactivo + reactivo) | Mejor UX sin interrupciones + fallback |
+
+> **Documentación completa:** Ver `app/docs/adr/001-auth-token-management.md`
+
+#### Archivos Modificados
+
+**`app/src/store/auth.ts`** - Auth Store
+- Añadido `refreshToken`, `idToken`, `tokenExpiresAt` al estado
+- Añadido `isInitialized` para evitar flash de loading
+- Nuevas acciones: `setTokens()`, `updateTokens()`
+- Helpers: `isTokenExpired()`, `getTimeUntilExpiry()`
+- Persistencia en localStorage con key `writeflow-auth`
+
+**`app/src/services/api.ts`** - HTTP Client
+- Inyección automática de `idToken` en header `Authorization: Bearer {token}`
+- Refresh reactivo: si recibe 401, intenta refresh y retry
+- Queue de requests para evitar múltiples refresh simultáneos
+- Opción `skipAuth: true` para endpoints públicos
+
+**`app/src/hooks/use-auth.ts`** - Auth Hook
+- Actualizado para usar `setTokens()` en login/confirm
+- Nuevas funciones: `refreshAccessToken()`, `initializeAuth()`
+- Exports adicionales: `isTokenExpired`, `getTimeUntilExpiry`
+
+**`app/src/hooks/use-token-refresh.ts`** - NUEVO
+- Hook para refresh proactivo
+- Timer programado 5 minutos antes de expiración
+- Se ejecuta en `App.tsx` a nivel raíz
+
+#### Tipos de JWT Claims
+
+**`app/src/types/auth.ts`** - Tipos completos de AWS Cognito
+```typescript
+// Claims del ID Token (identidad del usuario)
+interface CognitoIdTokenClaims {
+  sub: string;              // UUID del usuario
+  email?: string;
+  "cognito:username": string;
+  "cognito:groups"?: string[];
+  token_use: "id";
+  // ... más claims documentados
+}
+
+// Claims del Access Token (autorización)
+interface CognitoAccessTokenClaims {
+  sub: string;
+  username: string;
+  scope: string;            // OAuth scopes
+  token_use: "access";
+  // ... más claims documentados
+}
+```
+
+#### Flujo de Refresh Implementado
 
 ```
-Funcionalidad:
-- Wrapper que verifica isAuthenticated del store
-- Si no autenticado → redirect a /auth/login
-- Guardar returnUrl para redirect post-login
-- Mostrar loading mientras verifica token
+PROACTIVO (useTokenRefresh):
+┌─────────────────────────────────────────────────────────┐
+│ 1. Token expira en 60 min                               │
+│ 2. Timer se programa para 55 min (5 min antes)          │
+│ 3. Al dispararse → POST /auth/refresh                   │
+│ 4. updateTokens() actualiza store                       │
+│ 5. Se reprograma timer para nuevo token                 │
+└─────────────────────────────────────────────────────────┘
+
+REACTIVO (api.ts):
+┌─────────────────────────────────────────────────────────┐
+│ 1. Request recibe 401                                   │
+│ 2. Si no hay refresh en curso → refreshToken()          │
+│ 3. Si hay refresh en curso → esperar promise existente  │
+│ 4. Si exitoso → retry request original con nuevo token  │
+│ 5. Si falla → logout() + throw ApiError(401)            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Rutas a proteger:**
-| Ruta | Requiere Auth |
-|------|---------------|
-| `/` | Sí (editor) |
-| `/posts` | Sí (mis posts) |
-| `/posts/new` | Sí |
-| `/posts/:slug/edit` | Sí |
-| `/posts/:slug` | No (vista pública) |
-| `/auth/*` | No |
+### 1.3 Logout UI ✅
 
-**UX Estados:**
-- Loading: Spinner centrado mientras verifica
-- No auth: Redirect con toast "Inicia sesión para continuar"
-- Auth expirado: Redirect con toast "Tu sesión expiró"
+**Archivo modificado:** `app/src/components/layout/AppSidebar.tsx`
 
-### 1.2 Token Management
+**Implementación:**
+- Botón "Cerrar sesión" en `<SidebarFooter>`
+- Muestra email del usuario autenticado
+- Llama `useAuth().logout()` que:
+  - Intenta `POST /auth/logout` (ignora errores)
+  - Limpia estado del store
+  - Redirige a `/auth/login`
 
-**Archivo:** `src/services/api.ts`
+### Documentación Generada
 
-```
-Modificaciones:
-- Interceptor que añade Authorization header
-- Leer token de authStore o localStorage
-- Header: "Authorization: Bearer {accessToken}"
-```
+| Archivo | Descripción |
+|---------|-------------|
+| `app/docs/adr/001-auth-token-management.md` | ADR con decisiones arquitectónicas, trade-offs y justificaciones |
+| `app/docs/auth/README.md` | Guía de uso y extensión del módulo de auth |
+| JSDoc en archivos clave | Documentación inline con ejemplos |
 
-**Archivo:** `src/hooks/use-auth.ts`
+### Dependencias Añadidas
 
-```
-Agregar:
-- refreshToken() → POST /auth/refresh
-- Llamar refresh cuando token cerca de expirar
-- Si refresh falla → logout + redirect login
-- Verificar expiración con jwt-decode
+```json
+{
+  "jwt-decode": "^4.0.0"
+}
 ```
 
-**UX Estados:**
-- Token válido: Requests normales
-- Token por expirar (<5min): Refresh silencioso en background
-- Token expirado: Intentar refresh, si falla → logout
-- Refresh failed: Modal "Tu sesión expiró" con botón "Iniciar sesión"
+### Checklist Final
 
-### 1.3 Logout UI
-
-**Ubicación:** `src/components/layout/AppSidebar.tsx`
-
-```
-Agregar:
-- Botón/link "Cerrar sesión" en sidebar
-- Confirmación opcional
-- Llamar authStore.logout()
-- Redirect a /auth/login
-- Toast "Has cerrado sesión"
-```
+- [x] ProtectedRoute component
+- [x] Auth guards en rutas (/, /posts, /posts/:slug)
+- [x] Token en headers API (idToken)
+- [x] Token refresh automático (proactivo + reactivo)
+- [x] Logout UI en sidebar
+- [x] Persistencia de sesión en localStorage
+- [x] Tipos completos de JWT claims de Cognito
+- [x] Documentación ADR
+- [x] Documentación de uso (README)
+- [x] JSDoc en archivos clave
+- [x] Redirect post-login a returnUrl
+- [x] Toast de feedback en logout/sesión expirada
 
 ---
 
-## 2. GESTIÓN DE POSTS - CREAR
+## 2. GESTIÓN DE POSTS - CREAR ✅ COMPLETADO
 
-### 2.1 Página Crear Post
+> **Fecha de implementación:** 2025-12-02
+> **Implementado por:** Claude Code
 
-**Archivo:** `src/pages/posts/NewPost.tsx`
-**Ruta:** `/posts/new`
+### 2.1 Página Crear Post ✅
 
+**Archivo:** `app/src/pages/dashboard/NewPost.tsx`
+**Ruta:** `/dashboard/posts/new`
+
+**Layout implementado:**
 ```
-Layout:
 ┌─────────────────────────────────────────────────┐
-│ ← Volver a posts          [Guardar borrador] [Publicar] │
+│ ← Volver  [Badge status]    [Guardar borrador] [Publicar] │
 ├─────────────────────────────────────────────────┤
 │ Título: [________________________________]      │
 │                                                 │
@@ -95,282 +189,219 @@ Layout:
 │ │     Editor          │      Preview          │ │
 │ │   (TipTap)          │    (HTML render)      │ │
 │ │                     │                       │ │
-│ │                     │                       │ │
 │ └─────────────────────┴───────────────────────┘ │
 └─────────────────────────────────────────────────┘
 ```
 
-**Campos del formulario:**
-| Campo | Tipo | Validación | Requerido |
-|-------|------|------------|-----------|
-| title | Input text | 1-200 chars, no vacío | Sí |
-| content | TipTap Editor | No vacío para publicar | Sí para publicar |
-| status | Hidden/Select | draft \| published | No (default: draft) |
+**Funcionalidades implementadas:**
 
-**Acciones:**
-| Botón | Acción | Validación |
-|-------|--------|------------|
-| Guardar borrador | Crear con status=draft | Solo título requerido |
-| Publicar | Crear con status=published | Título + contenido requeridos |
-| Cancelar/Volver | Confirmar si hay cambios, navegar a /posts | - |
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| Campo título | ✅ | Input con validación Zod (1-200 chars) |
+| Editor TipTap | ✅ | Con preview side-by-side |
+| Guardar borrador | ✅ | Solo requiere título |
+| Publicar | ✅ | Requiere título + contenido |
+| Validación Zod | ✅ | `postFormSchema` en `lib/validations.ts` |
+| Toast feedback | ✅ | Sonner para éxito/error |
+| Redirect post-crear | ✅ | Navega a `/dashboard/posts/:slug/edit` |
+| Unsaved changes warning | ✅ | `beforeunload` event |
 
-**Flujo técnico:**
-```
-1. Usuario escribe título y contenido
-2. Click "Guardar borrador" o "Publicar"
-3. Validar campos (Zod)
-4. setIsSaving(true)
-5. Generar slug temporal del título (para upload)
-6. uploadService.getUploadUrl(slug)
-7. uploadService.uploadContent(presignedUrl, htmlContent)
-8. postsService.create({ title, contentKey, status })
-9. setIsSaving(false)
-10. Toast "Post creado"
-11. Navigate a /posts/:slug/edit o /posts
-```
+**Funcionalidades opcionales no implementadas:**
+- Auto-save draft cada 30s
+- Keyboard shortcuts (Ctrl+S, Ctrl+Enter)
 
-**UX Estados:**
-| Estado | UI |
-|--------|-----|
-| Inicial | Formulario vacío, botones habilitados |
-| Escribiendo | isDirty=true, mostrar indicador "Sin guardar" |
-| Guardando | Botones disabled, spinner en botón activo |
-| Error validación | Mensaje bajo campo, borde rojo |
-| Error API | Toast error + botones habilitados |
-| Éxito | Toast + redirect |
+### 2.2 Componente PostForm (Reutilizable) ✅
 
-**Manejo de errores:**
-| Error | Código | UX |
-|-------|--------|-----|
-| Título vacío | 400 | "El título es obligatorio" bajo input |
-| ContentKey inválido | 403 | Toast "Error al subir contenido" |
-| Upload S3 falla | - | Toast "Error al subir, intenta de nuevo" + retry |
-| Red/timeout | - | Toast "Sin conexión" + retry button |
-| No autenticado | 401 | Redirect login |
-
-### 2.2 Componente PostForm (Reutilizable)
-
-**Archivo:** `src/components/posts/PostForm.tsx`
+**Archivo:** `app/src/components/posts/PostForm.tsx`
 
 ```typescript
 interface PostFormProps {
-  initialData?: {
-    title: string;
-    content: string;
-    status: 'draft' | 'published';
-  };
-  onSubmit: (data: PostFormData) => Promise<void>;
-  onCancel: () => void;
-  isLoading: boolean;
   mode: 'create' | 'edit';
+  initialData?: PostFormInitialData;
+  onSave: (data: PostFormValues, action: 'draft' | 'publish') => Promise<void>;
+  onCancel: () => void;
+  onDelete?: () => Promise<void>;
+  onUnpublish?: () => Promise<void>;
+  isSaving: boolean;
+  isDeleting?: boolean;
+  error?: string | null;
+}
+
+interface PostFormInitialData {
+  title: string;
+  content: string;
+  status: PostStatus;
+  slug?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
 }
 ```
 
-**Funcionalidad:**
-- Formulario completo título + editor
-- Validación con Zod
-- Unsaved changes warning (beforeunload)
-- Auto-save draft cada 30s (opcional)
-- Keyboard shortcuts: Ctrl+S guardar, Ctrl+Enter publicar
+**Funcionalidades:**
+- [x] Formulario completo título + editor
+- [x] Validación con Zod
+- [x] Unsaved changes warning (beforeunload)
+- [x] isDirty tracking
+- [x] Estados de loading/saving/deleting
+- [ ] Auto-save draft cada 30s (opcional, no implementado)
+- [ ] Keyboard shortcuts (opcional, no implementado)
 
 ---
 
-## 3. GESTIÓN DE POSTS - EDITAR
+## 3. GESTIÓN DE POSTS - EDITAR ✅ COMPLETADO
 
-### 3.1 Página Editar Post
+> **Fecha de implementación:** 2025-12-02
+> **Implementado por:** Claude Code
 
-**Archivo:** `src/pages/posts/EditPost.tsx`
-**Ruta:** `/posts/:slug/edit`
+### 3.1 Página Editar Post ✅
 
+**Archivo:** `app/src/pages/dashboard/EditPost.tsx`
+**Ruta:** `/dashboard/posts/:slug/edit`
+
+**Layout implementado:**
 ```
-Layout: (mismo que crear, con datos cargados)
-┌─────────────────────────────────────────────────┐
-│ ← Volver    [Estado: Borrador ▼]  [Guardar] [Publicar] │
-├─────────────────────────────────────────────────┤
-│ Título: [Post existente___________________]     │
-│                                                 │
-│ ┌─────────────────────┬───────────────────────┐ │
-│ │     Editor          │      Preview          │ │
-│ │   (contenido        │    (HTML render)      │ │
-│ │    cargado)         │                       │ │
-│ └─────────────────────┴───────────────────────┘ │
-├─────────────────────────────────────────────────┤
-│ Creado: 2 dic 2025  |  Actualizado: hace 5 min  │
-│ [Eliminar post]                                 │
-└─────────────────────────────────────────────────┘
-```
-
-**Carga inicial:**
-```
-1. useEffect con slug de params
-2. postsStore.fetchPost(slug) → GET /my/posts/{slug}
-3. Si 404 → mostrar "Post no encontrado"
-4. Si 403 → mostrar "No tienes permiso"
-5. Poblar formulario con datos
+┌───────────────────────────────────────────────────────────┐
+│ ← Volver [Borrador] [Ver post ↗]    [Guardar] [Publicar]  │
+│                                   o [Guardar] [Despublicar]│
+├───────────────────────────────────────────────────────────┤
+│ Título: [Post existente___________________]               │
+│                                                           │
+│ ┌─────────────────────────┬─────────────────────────────┐ │
+│ │     Editor              │      Preview                │ │
+│ │   (contenido cargado)   │    (HTML render)            │ │
+│ └─────────────────────────┴─────────────────────────────┘ │
+├───────────────────────────────────────────────────────────┤
+│ Slug: mi-post | Creado: 2 Dec | Actualizado: 2 Dec        │
+│ Publicado: 2 Dec                          [Eliminar post] │
+└───────────────────────────────────────────────────────────┘
 ```
 
-**Campos adicionales vs crear:**
-| Campo | Tipo | Editable |
-|-------|------|----------|
-| slug | Display only | No (generado) |
-| createdAt | Display only | No |
-| updatedAt | Display only | No |
-| publishedAt | Display only | No |
-| status | Select/Toggle | Sí |
+**Funcionalidades implementadas:**
 
-**Acciones:**
-| Botón | Acción | Condición |
-|-------|--------|-----------|
-| Guardar | PUT con cambios | Siempre visible |
-| Publicar | PUT status=published | Si status=draft |
-| Despublicar | PUT status=draft | Si status=published |
-| Eliminar | DELETE + confirm | Siempre visible |
-| Ver post | Link a /posts/:slug | Si published |
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| Cargar post existente | ✅ | `fetchMyPost()` → `GET /my/posts/:slug` |
+| Mostrar metadata | ✅ | slug, createdAt, updatedAt, publishedAt |
+| Badge de estado | ✅ | "Publicado" / "Borrador" |
+| Botón Guardar | ✅ | Guarda cambios sin modificar status |
+| Botón Publicar | ✅ | Visible solo si status=draft |
+| Botón Despublicar | ✅ | Visible solo si status=published |
+| Link Ver post | ✅ | Abre `/posts/:slug` en nueva pestaña (solo si published) |
+| Botón Eliminar | ✅ | Modal de confirmación con AlertDialog |
+| isDirty tracking | ✅ | Detecta cambios en título y contenido |
+| Unsaved changes warning | ✅ | `beforeunload` event |
+| Estado: Cargando | ✅ | EditorSkeleton |
+| Estado: Post no encontrado | ✅ | Página error con botón volver |
+| Toast feedback | ✅ | Éxito/error en todas las acciones |
 
-**Flujo técnico actualizar:**
-```
-1. Usuario modifica título/contenido/status
-2. Click "Guardar"
-3. Validar cambios
-4. Si contenido cambió:
-   a. uploadService.getUploadUrl(slug)
-   b. uploadService.uploadContent(url, html)
-   c. Incluir nuevo contentKey en update
-5. postsService.update(slug, { title?, contentKey?, status? })
-6. Actualizar store
-7. Toast "Cambios guardados"
-```
+**Archivos modificados para esta funcionalidad:**
 
-**Flujo técnico publicar/despublicar:**
-```
-1. Click "Publicar" / "Despublicar"
-2. Si publicar: validar que tenga contenido
-3. postsService.update(slug, { status: 'published'|'draft' })
-4. Actualizar store
-5. Toast "Post publicado" / "Post movido a borradores"
-```
+| Archivo | Cambios |
+|---------|---------|
+| `hooks/use-posts.ts` | Añadido `fetchMyPost()`, `unpublishPost()` |
+| `services/posts.ts` | Añadido `getMyBySlug()` |
+| `components/posts/PostForm.tsx` | Añadido `onUnpublish`, link "Ver post", `publishedAt` |
 
-**Flujo técnico eliminar:**
-```
-1. Click "Eliminar"
-2. Modal confirmación: "¿Eliminar '{título}'? Esta acción no se puede deshacer"
-3. Si confirma:
-   a. postsService.delete(slug)
-   b. Toast "Post eliminado"
-   c. Navigate a /posts
-```
+**Flujos implementados:**
 
-**UX Estados:**
-| Estado | UI |
-|--------|-----|
-| Cargando post | Skeleton del formulario |
-| Post no encontrado | Página error con link a /posts |
-| Sin permiso | Página error "No tienes acceso a este post" |
-| Editando | Formulario con datos, isDirty tracking |
-| Guardando | Spinner en botón, inputs disabled |
-| Publicando | Spinner, toast de progreso |
-| Eliminando | Modal con spinner |
-
-**Manejo de errores:**
-| Error | Código | UX |
-|-------|--------|-----|
-| Post no existe | 404 | Página "Post no encontrado" |
-| No es dueño | 403/404 | Página "No tienes permiso" |
-| Conflicto (editado por otro) | 409 | Modal "Post modificado, recargar?" |
-| Validación título | 400 | Error bajo input |
-| Upload falla | - | Toast + retry |
+1. **Guardar**: `updatePost(slug, { title, content })` → Toast "Cambios guardados"
+2. **Publicar**: `updatePost(slug, { ..., status: 'published' })` → Toast "Post publicado"
+3. **Despublicar**: `unpublishPost(slug)` → Toast "Post movido a borradores"
+4. **Eliminar**: Modal confirmación → `deletePost(slug)` → Toast + Navigate a `/dashboard/posts`
 
 ---
 
-## 4. GESTIÓN DE POSTS - LISTAR
+## 4. GESTIÓN DE POSTS - LISTAR ✅ COMPLETADO
 
-### 4.1 Página Lista de Posts (Mejoras)
+> **Fecha de implementación:** 2025-12-02
+> **Implementado por:** Claude Code
 
-**Archivo:** `src/pages/Posts.tsx` (modificar existente)
+### 4.1 Página Lista de Posts ✅
 
-**Mejoras necesarias:**
+**Archivo:** `app/src/pages/dashboard/MyPosts.tsx`
 
+**Layout implementado:**
 ```
-Layout mejorado:
 ┌─────────────────────────────────────────────────┐
-│ Mis Posts                        [+ Nuevo Post] │
+│ My Posts                         [+ New Post]   │
+│ Manage your blog posts and articles             │
 ├─────────────────────────────────────────────────┤
-│ Filtros: [Todos ▼] [Buscar...________] │
+│ 🔍 [Buscar por título...____] [Todos ▼]        │
 ├─────────────────────────────────────────────────┤
-│ ┌─────┬──────────┬─────────┬─────────┬────────┐ │
-│ │ □   │ Título   │ Estado  │ Fecha   │ ···    │ │
-│ ├─────┼──────────┼─────────┼─────────┼────────┤ │
-│ │ □   │ Post 1   │ Publ.   │ 2 dic   │ ···    │ │
-│ │ □   │ Post 2   │ Borr.   │ 1 dic   │ ···    │ │
-│ └─────┴──────────┴─────────┴─────────┴────────┘ │
+│ │ Title │ Slug │ Status │ Created │ Updated │···│
+│ ├───────┼──────┼────────┼─────────┼─────────┼───┤
+│ │ Post 1│ ...  │ Publ.  │ Dec 2   │ Dec 2   │ ⋮ │
+│ │ Post 2│ ...  │ Draft  │ Dec 1   │ Dec 1   │ ⋮ │
 ├─────────────────────────────────────────────────┤
-│ Mostrando 1-10 de 25    [< Anterior] [Siguiente >] │
+│              [Cargar más]                       │
 └─────────────────────────────────────────────────┘
 ```
 
-**Funcionalidades a agregar:**
+**Funcionalidades implementadas:**
 
-1. **Remover mock data** - Usar API real
-2. **Filtro por estado** - Dropdown: Todos | Publicados | Borradores
-3. **Búsqueda** - Input para filtrar por título (client-side o API)
-4. **Paginación real** - Usar nextToken del API
-5. **Selección múltiple** - Checkbox para acciones bulk
-6. **Acciones bulk** - Eliminar seleccionados, Publicar seleccionados
-7. **Ordenamiento** - Click en header para ordenar
-8. **Refresh** - Botón para recargar lista
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| API real (no mock) | ✅ | `fetchMyPosts()` llama a `GET /my/posts` |
+| Filtro por estado | ✅ | `<Select>` con Todos / Publicados / Borradores |
+| Búsqueda | ✅ | Input con filtrado client-side por título |
+| Paginación con nextToken | ✅ | Botón "Cargar más" que mantiene el filtro de estado |
+| Acciones por fila | ✅ | Dropdown: Ver, Editar, Eliminar |
+| Empty state | ✅ | Icono + mensaje + CTA "Crear post" |
+| Error state | ✅ | Banner con mensaje de error |
+| Loading state | ✅ | "Loading..." en tabla |
 
-**Integración API:**
-```typescript
-// Cargar posts reales
-useEffect(() => {
-  const params: ListPostsParams = {};
-  if (statusFilter !== 'all') params.status = statusFilter;
-  if (limit) params.limit = limit;
-  postsStore.fetchMyPosts(params);
-}, [statusFilter]);
+**Funcionalidades pendientes (nice-to-have):**
 
-// Paginación
-const handleLoadMore = () => {
-  postsStore.loadMore();
-};
-```
+| Feature | Prioridad | Notas |
+|---------|-----------|-------|
+| Selección múltiple | Baja | Checkbox para acciones bulk |
+| Acciones bulk | Baja | Eliminar/Publicar seleccionados |
+| Ordenamiento por columna | Baja | TanStack Table lo soporta, solo falta UI |
+| Botón refresh | Baja | Recargar lista manualmente |
 
-**UX Estados:**
-| Estado | UI |
-|--------|-----|
-| Cargando inicial | Skeleton table (5 rows) |
-| Lista vacía | "No tienes posts. ¡Crea tu primero!" + CTA |
-| Lista vacía filtrada | "No hay posts {status}" |
-| Error carga | "Error al cargar posts" + retry |
-| Cargando más | Spinner en botón "Cargar más" |
-| No más páginas | Ocultar botón "Cargar más" |
+### 4.2 Acciones en Tabla ✅
 
-### 4.2 Acciones en Tabla
-
-**Dropdown por fila:**
+**Dropdown por fila (implementado):**
 | Acción | Icono | Navegación/Acción |
 |--------|-------|-------------------|
-| Ver | Eye | `/posts/:slug` (nueva pestaña si published) |
-| Editar | Pencil | `/posts/:slug/edit` |
-| Publicar | Upload | PUT status=published (si draft) |
-| Despublicar | Download | PUT status=draft (si published) |
-| Duplicar | Copy | Crear copia como borrador |
-| Eliminar | Trash | Modal confirmación |
+| Ver | Eye | `/posts/:slug` |
+| Editar | Pencil | `/dashboard/posts/:slug/edit` |
+| Eliminar | Trash | Modal confirmación con `DeleteDialog` |
 
-**Acciones bulk (con selección):**
-| Acción | Confirmación |
-|--------|--------------|
-| Eliminar seleccionados | "¿Eliminar {n} posts?" |
-| Publicar seleccionados | "¿Publicar {n} posts?" |
-| Despublicar seleccionados | "¿Mover {n} posts a borradores?" |
+**Acciones no implementadas:**
+| Acción | Prioridad | Notas |
+|--------|-----------|-------|
+| Publicar/Despublicar | Media | Cambiar status desde dropdown |
+| Duplicar | Baja | Crear copia como borrador |
+
+### 4.3 Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `app/src/pages/dashboard/MyPosts.tsx` | Añadido filtro, búsqueda, paginación, empty state |
+| `app/src/hooks/use-posts.ts` | `loadMore()` ahora acepta `{ status }` |
+| `app/src/pages/Blog.tsx` | Fix: `onClick={() => loadMore()}` |
+
+### 4.4 Componentes Utilizados
+
+- `@/components/posts/DataTable` - Tabla con TanStack Table
+- `@/components/posts/columns` - Definición de columnas
+- `@/components/posts/DeleteDialog` - Modal de confirmación
+- `@/components/ui/select` - Filtro de estado
+- `@/components/ui/input` - Campo de búsqueda
 
 ---
 
-## 5. GESTIÓN DE POSTS - VER (PÚBLICO)
+## 5. GESTIÓN DE POSTS - VER (PÚBLICO) ✅ COMPLETADO
 
-### 5.1 Página Vista Post (Mejoras)
+> **Fecha de implementación:** 2025-12-02
+> **Implementado por:** Claude Code
 
-**Archivo:** `src/pages/PostView.tsx` (modificar existente)
+### 5.1 Página Vista Post ✅
+
+**Archivo:** `app/src/pages/PostView.tsx`
+**Ruta:** `/posts/:slug` (pública)
 
 ```
 Layout público:
@@ -392,65 +423,70 @@ Layout público:
 └─────────────────────────────────────────────────┘
 ```
 
-**Mejoras necesarias:**
+**Funcionalidades implementadas:**
 
-1. **Remover mock data** - Usar API real
-2. **Metadata SEO** - Title, description, og:tags
-3. **Fecha formateada** - "Publicado el {fecha}"
-4. **Autor** - Mostrar nombre/email del autor (si disponible)
-5. **Botón editar** - Solo si es el dueño (verificar authorId)
-6. **Compartir** - Copiar URL, share to social
-7. **Navegación** - Post anterior/siguiente (opcional)
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| API real (no mock) | ✅ | `fetchPost()` → `GET /posts/:slug` |
+| Fecha formateada | ✅ | "Published on {fecha}" con date-fns |
+| Botón editar | ✅ | Solo visible si `isOwner` |
+| Banner borrador | ✅ | "This is a draft" si `status=draft && isOwner` |
+| Loading state | ✅ | `PostViewSkeleton` |
+| 404 page | ✅ | "Post not found" + link a home |
+| Error state | ✅ | Mensaje de error con retry |
 
-**Lógica de permisos:**
-```typescript
-const isOwner = post.authorId === authStore.user?.id;
-// Mostrar "Editar" solo si isOwner
-// Mostrar "Este post es un borrador" si draft && isOwner
-```
+**UX Estados implementados:**
 
-**UX Estados:**
 | Estado | UI |
 |--------|-----|
-| Cargando | Skeleton (título + párrafos) |
-| Post no encontrado | "Post no encontrado" + link home |
-| Draft (no owner) | 404 (API lo maneja) |
-| Draft (owner) | Banner "Este es un borrador" + contenido |
+| Cargando | PostViewSkeleton |
+| Post no encontrado | "Post not found" + botón "Go to Blog" |
+| Draft (no owner) | 404 (API retorna 404) |
+| Draft (owner) | Banner "This is a draft" + contenido |
 | Published | Contenido normal |
-| Error | "Error al cargar" + retry |
+| Error | Mensaje error + botón retry |
 
-### 5.2 Página Blog Público (Nueva)
+### 5.2 Página Blog Público ✅
 
-**Archivo:** `src/pages/Blog.tsx`
-**Ruta:** `/blog` o `/` (para visitantes no auth)
+**Archivo:** `app/src/pages/Blog.tsx`
+**Ruta:** `/` (index, pública)
 
+**Layout implementado:**
 ```
-Layout:
 ┌─────────────────────────────────────────────────┐
-│ Writeflow Blog                                  │
+│ Writeflow              [Login] [Register]       │
+│                    o   [Dashboard] si auth      │
 ├─────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────┐ │
-│ │ Post Title 1                                │ │
-│ │ Extracto del contenido...                   │ │
-│ │ 2 dic 2025 · 5 min lectura                  │ │
-│ └─────────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ Post Title 2                                │ │
-│ │ Extracto del contenido...                   │ │
-│ │ 1 dic 2025 · 3 min lectura                  │ │
-│ └─────────────────────────────────────────────┘ │
+│ Blog                                            │
+│ Latest posts from our community                 │
+├─────────────────────────────────────────────────┤
+│ ┌─────────────┬─────────────┬─────────────┐     │
+│ │ Post Title  │ Post Title  │ Post Title  │     │
+│ │ Dec 2, 2025 │ Dec 1, 2025 │ Nov 30      │     │
+│ └─────────────┴─────────────┴─────────────┘     │
 │                                                 │
-│ [Cargar más posts]                              │
+│              [Load more]                        │
+├─────────────────────────────────────────────────┤
+│ Writeflow - A simple blogging platform          │
 └─────────────────────────────────────────────────┘
 ```
 
-**Funcionalidad:**
-- Lista posts públicos (GET /posts)
-- Cards con título + extracto (primeros 150 chars)
-- Fecha publicación
+**Funcionalidades implementadas:**
+
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| Lista posts públicos | ✅ | `fetchPublicPosts()` → `GET /posts` |
+| Cards con título + fecha | ✅ | Grid responsive 1/2/3 columnas |
+| Paginación | ✅ | Botón "Load more" con `hasMore` |
+| Loading state | ✅ | Skeleton grid de 6 cards |
+| Empty state | ✅ | "No posts yet" + mensaje |
+| Error state | ✅ | Banner con mensaje de error |
+| Header dinámico | ✅ | Login/Register o Dashboard según auth |
+| Click → post | ✅ | Link a `/posts/:slug` |
+
+**Funcionalidades opcionales no implementadas:**
+- Extracto del contenido (solo "Click to read more...")
 - Tiempo de lectura estimado
-- Paginación infinita o botón "cargar más"
-- Click → /posts/:slug
 
 ---
 
@@ -813,58 +849,61 @@ xl: 1280px  - Desktop
 
 ## 14. CHECKLIST DE COMPLETITUD
 
-### Autenticación
-- [ ] ProtectedRoute component
-- [ ] Auth guards en rutas
-- [ ] Token en headers API
-- [ ] Token refresh automático
-- [ ] Logout UI
-- [ ] Redirect post-login
+### Autenticación ✅
+- [x] ProtectedRoute component
+- [x] Auth guards en rutas
+- [x] Token en headers API
+- [x] Token refresh automático
+- [x] Logout UI
+- [x] Redirect post-login
 
-### Posts - Crear
-- [ ] Ruta /posts/new
-- [ ] PostForm component
-- [ ] Validación Zod
-- [ ] Upload content flow
-- [ ] Create post API call
-- [ ] Success/error feedback
-- [ ] Redirect después de crear
+### Posts - Crear ✅
+- [x] Ruta /dashboard/posts/new
+- [x] PostForm component
+- [x] Validación Zod
+- [x] Upload content flow
+- [x] Create post API call
+- [x] Success/error feedback (Toast)
+- [x] Redirect después de crear
 
-### Posts - Editar
-- [ ] Ruta /posts/:slug/edit
-- [ ] Cargar post existente
-- [ ] Detectar cambios (isDirty)
-- [ ] Update content flow
-- [ ] Update post API call
-- [ ] Publicar/Despublicar
-- [ ] Eliminar con confirmación
+### Posts - Editar ✅
+- [x] Ruta /dashboard/posts/:slug/edit
+- [x] Cargar post existente (`fetchMyPost`)
+- [x] Detectar cambios (isDirty)
+- [x] Update content flow
+- [x] Update post API call
+- [x] Publicar/Despublicar
+- [x] Eliminar con confirmación
+- [x] Link "Ver post" (si published)
+- [x] Mostrar publishedAt
 
-### Posts - Listar
-- [ ] API real (no mock)
-- [ ] Filtro por estado
-- [ ] Paginación con nextToken
-- [ ] Acciones por fila
-- [ ] Empty state
-- [ ] Error state
-- [ ] Loading state
+### Posts - Listar ✅
+- [x] API real (no mock)
+- [x] Filtro por estado
+- [x] Búsqueda client-side
+- [x] Paginación con nextToken
+- [x] Acciones por fila
+- [x] Empty state
+- [x] Error state
+- [x] Loading state
 
-### Posts - Ver
-- [ ] API real (no mock)
-- [ ] Metadata (fecha, autor)
-- [ ] Botón editar (si owner)
-- [ ] Banner borrador (si owner)
-- [ ] 404 page
+### Posts - Ver ✅
+- [x] API real (no mock)
+- [x] Metadata (fecha, autor)
+- [x] Botón editar (si owner)
+- [x] Banner borrador (si owner)
+- [x] 404 page
 
-### Editor
-- [ ] Contenido inicial (edit mode)
-- [ ] Word count
-- [ ] Auto-save indicator
+### Editor ✅ (parcial)
+- [x] Contenido inicial (edit mode)
+- [ ] Word count (opcional)
+- [ ] Auto-save indicator (opcional)
 
-### Feedback
-- [ ] Toast system
-- [ ] Confirmación eliminar
-- [ ] Unsaved changes warning
-- [ ] Error boundaries
+### Feedback ✅
+- [x] Toast system (Sonner)
+- [x] Confirmación eliminar
+- [x] Unsaved changes warning (beforeunload)
+- [ ] Error boundaries (opcional)
 
 ### Responsive
 - [ ] Mobile editor

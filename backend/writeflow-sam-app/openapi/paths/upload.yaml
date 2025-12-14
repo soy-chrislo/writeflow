@@ -1,0 +1,76 @@
+upload-url:
+  options:
+    summary: CORS support for /upload-url
+    tags:
+      - CORS
+    responses:
+      '200':
+        description: CORS preflight response
+        headers:
+          Access-Control-Allow-Origin:
+            schema:
+              type: string
+          Access-Control-Allow-Methods:
+            schema:
+              type: string
+          Access-Control-Allow-Headers:
+            schema:
+              type: string
+        content: {}
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: '{"statusCode": 200}'
+      passthroughBehavior: never
+      responses:
+        default:
+          statusCode: '200'
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+  post:
+    summary: Get presigned URL for content upload
+    description: Returns a presigned S3 URL for uploading post content directly from the frontend
+    operationId: getUploadUrl
+    tags:
+      - Upload
+    security:
+      - CognitoAuthorizer: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/upload.yaml#/GetUploadUrlRequest'
+    responses:
+      '200':
+        description: Presigned URL generated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/upload.yaml#/UploadUrlResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    x-amazon-apigateway-integration:
+      type: aws_proxy
+      httpMethod: POST
+      uri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
+      passthroughBehavior: when_no_match

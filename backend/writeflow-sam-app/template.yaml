@@ -86,10 +86,6 @@ Resources:
       Name: !Sub writeflow-api-${Environment}
       StageName: !Ref Environment
       OpenApiVersion: '3.0.1'
-      Cors:
-        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
       Auth:
         DefaultAuthorizer: CognitoAuthorizer
         AddDefaultAuthorizerToCorsPreflight: false
@@ -98,6 +94,19 @@ Resources:
             UserPoolArn: !GetAtt WriteflowUserPool.Arn
             Identity:
               Header: Authorization
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
@@ -350,6 +359,202 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - handlers/getUploadUrl.ts
+
+  RefreshTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-refresh-token-${Environment}
+      CodeUri: src/
+      Handler: handlers/refreshToken.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        RefreshToken:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/refresh
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/refreshToken.ts
+
+  RegisterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-register-${Environment}
+      CodeUri: src/
+      Handler: handlers/register.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        Register:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/register
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/register.ts
+
+  ConfirmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-confirm-${Environment}
+      CodeUri: src/
+      Handler: handlers/confirm.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        Confirm:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/confirm
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/confirm.ts
+
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-login-${Environment}
+      CodeUri: src/
+      Handler: handlers/login.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/login
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/login.ts
+
+  ResendCodeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-resend-code-${Environment}
+      CodeUri: src/
+      Handler: handlers/resendCode.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        ResendCode:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/resend-code
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/resendCode.ts
+
+  ForgotPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-forgot-password-${Environment}
+      CodeUri: src/
+      Handler: handlers/forgotPassword.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        ForgotPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/forgot-password
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/forgotPassword.ts
+
+  ResetPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub writeflow-reset-password-${Environment}
+      CodeUri: src/
+      Handler: handlers/resetPassword.handler
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+      Events:
+        ResetPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WriteflowApi
+            Path: /auth/reset-password
+            Method: POST
+            Auth:
+              Authorizer: NONE
+              OverrideApiAuth: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - handlers/resetPassword.ts
 
 # ============================================
 # OUTPUTS
