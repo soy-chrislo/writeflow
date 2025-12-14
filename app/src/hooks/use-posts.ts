@@ -84,11 +84,35 @@ export function usePosts() {
 		[state.nextToken, fetchMyPosts],
 	);
 
+	/**
+	 * Remove a post from local state optimistically
+	 */
+	const removePost = useCallback((slug: string) => {
+		setState((prev) => ({
+			...prev,
+			posts: prev.posts.filter((p) => p.slug !== slug),
+		}));
+	}, []);
+
+	/**
+	 * Restore a post to local state (used when optimistic delete fails)
+	 */
+	const restorePost = useCallback((post: Post) => {
+		setState((prev) => ({
+			...prev,
+			posts: [post, ...prev.posts].sort(
+				(a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+			),
+		}));
+	}, []);
+
 	return {
 		...state,
 		fetchMyPosts,
 		fetchPublicPosts,
 		loadMore,
+		removePost,
+		restorePost,
 		hasMore: !!state.nextToken,
 	};
 }

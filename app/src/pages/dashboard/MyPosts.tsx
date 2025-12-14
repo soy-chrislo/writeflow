@@ -1,6 +1,7 @@
 import { FileText, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { DataTable, DeleteDialog, getColumns } from "@/components/posts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ type StatusFilter = PostStatus | "all";
 
 export default function MyPosts() {
 	const navigate = useNavigate();
-	const { posts, isLoading, error, fetchMyPosts, loadMore, hasMore } =
+	const { posts, isLoading, error, fetchMyPosts, loadMore, hasMore, removePost, restorePost } =
 		usePosts();
 	const { deletePost, isSaving: isDeleting } = usePost();
 
@@ -61,15 +62,22 @@ export default function MyPosts() {
 	const handleConfirmDelete = useCallback(async () => {
 		if (!postToDelete) return;
 
+		const deletedPost = postToDelete;
+
+		// Optimistic UI: remove immediately and close dialog
+		removePost(deletedPost.slug);
+		setDeleteDialogOpen(false);
+		setPostToDelete(null);
+
 		try {
-			await deletePost(postToDelete.slug);
-			setDeleteDialogOpen(false);
-			setPostToDelete(null);
-			fetchMyPosts();
+			await deletePost(deletedPost.slug);
+			toast.success("Post deleted successfully");
 		} catch {
-			// Error is handled in the hook
+			// Restore on error
+			restorePost(deletedPost);
+			toast.error("Failed to delete post. Please try again.");
 		}
-	}, [postToDelete, deletePost, fetchMyPosts]);
+	}, [postToDelete, deletePost, removePost, restorePost]);
 
 	const columns = useMemo(
 		() =>
@@ -108,13 +116,13 @@ export default function MyPosts() {
 			{showEmptyState ? (
 				<div className="flex flex-col items-center justify-center py-16 text-center">
 					<FileText className="size-12 text-muted-foreground/50 mb-4" />
-					<h2 className="text-lg font-semibold mb-1">No tienes posts</h2>
+					<h2 className="text-lg font-semibold mb-1">No posts yet</h2>
 					<p className="text-muted-foreground mb-4">
-						Crea tu primer post para empezar a escribir
+						Create your first post to start writing
 					</p>
 					<Button onClick={() => navigate("/dashboard/posts/new")}>
 						<Plus className="size-4" />
-						Crear post
+						New Post
 					</Button>
 				</div>
 			) : (
@@ -123,7 +131,7 @@ export default function MyPosts() {
 						<div className="relative flex-1 max-w-sm">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 							<Input
-								placeholder="Buscar por título..."
+								placeholder="Search by title..."
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								className="pl-9"
@@ -134,12 +142,12 @@ export default function MyPosts() {
 							onValueChange={(v) => setStatusFilter(v as StatusFilter)}
 						>
 							<SelectTrigger className="w-[150px]">
-								<SelectValue placeholder="Estado" />
+								<SelectValue placeholder="Status" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="published">Publicados</SelectItem>
-								<SelectItem value="draft">Borradores</SelectItem>
+								<SelectItem value="all">All</SelectItem>
+								<SelectItem value="published">Published</SelectItem>
+								<SelectItem value="draft">Drafts</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -161,7 +169,7 @@ export default function MyPosts() {
 								}
 								disabled={isLoading}
 							>
-								{isLoading ? "Cargando..." : "Cargar más"}
+								{isLoading ? "Loading..." : "Load more"}
 							</Button>
 						</div>
 					)}
