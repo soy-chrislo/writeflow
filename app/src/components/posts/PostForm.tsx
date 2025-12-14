@@ -76,6 +76,7 @@ export function PostForm({
 		initialData?.content || "",
 	);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [savingAction, setSavingAction] = useState<"draft" | "publish" | "unpublish" | null>(null);
 
 	const form = useForm<PostFormValues>({
 		resolver: zodResolver(postFormSchema),
@@ -116,7 +117,12 @@ export function PostForm({
 
 		const values = form.getValues();
 		values.content = editorContent;
-		await onSave(values, "draft");
+		setSavingAction("draft");
+		try {
+			await onSave(values, "draft");
+		} finally {
+			setSavingAction(null);
+		}
 	};
 
 	const handlePublish = async () => {
@@ -131,12 +137,28 @@ export function PostForm({
 		if (!editorContent || editorContent === "<p></p>") {
 			form.setError("content", {
 				type: "manual",
-				message: "El contenido es obligatorio para publicar",
+				message: "Content is required to publish",
 			});
 			return;
 		}
 
-		await onSave(values, "publish");
+		setSavingAction("publish");
+		try {
+			await onSave(values, "publish");
+		} finally {
+			setSavingAction(null);
+		}
+	};
+
+	const handleUnpublish = async () => {
+		if (onUnpublish) {
+			setSavingAction("unpublish");
+			try {
+				await onUnpublish();
+			} finally {
+				setSavingAction(null);
+			}
+		}
 	};
 
 	const handleDelete = async () => {
@@ -161,7 +183,7 @@ export function PostForm({
 						disabled={isDisabled}
 					>
 						<ArrowLeft className="size-4" />
-						Volver
+						Back
 					</Button>
 					{mode === "edit" && initialData?.status && (
 						<Badge
@@ -169,7 +191,7 @@ export function PostForm({
 								initialData.status === "published" ? "default" : "secondary"
 							}
 						>
-							{initialData.status === "published" ? "Publicado" : "Borrador"}
+							{initialData.status === "published" ? "Published" : "Draft"}
 						</Badge>
 					)}
 					{/* Link to view published post */}
@@ -179,7 +201,7 @@ export function PostForm({
 							<Button variant="ghost" size="sm" asChild>
 								<Link to={`/posts/${initialData.slug}`} target="_blank">
 									<ExternalLink className="size-4" />
-									Ver post
+									View post
 								</Link>
 							</Button>
 						)}
@@ -191,8 +213,8 @@ export function PostForm({
 						onClick={handleSaveDraft}
 						disabled={isDisabled}
 					>
-						{isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-						{mode === "create" ? "Guardar borrador" : "Guardar"}
+						{savingAction === "draft" ? <Loader2 className="size-4 animate-spin" /> : null}
+						{mode === "create" ? "Save draft" : "Save"}
 					</Button>
 					{/* Show Unpublish button for published posts, Publish for drafts */}
 					{mode === "edit" &&
@@ -201,11 +223,11 @@ export function PostForm({
 						<Button
 							type="button"
 							variant="secondary"
-							onClick={onUnpublish}
+							onClick={handleUnpublish}
 							disabled={isDisabled}
 						>
-							{isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-							Despublicar
+							{savingAction === "unpublish" ? <Loader2 className="size-4 animate-spin" /> : null}
+							Unpublish
 						</Button>
 					) : (
 						<Button
@@ -213,8 +235,8 @@ export function PostForm({
 							onClick={handlePublish}
 							disabled={isDisabled}
 						>
-							{isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-							Publicar
+							{savingAction === "publish" ? <Loader2 className="size-4 animate-spin" /> : null}
+							Publish
 						</Button>
 					)}
 				</div>
@@ -235,10 +257,10 @@ export function PostForm({
 						name="title"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Título</FormLabel>
+								<FormLabel>Title</FormLabel>
 								<FormControl>
 									<Input
-										placeholder="Escribe el título de tu post..."
+										placeholder="Enter your post title..."
 										disabled={isDisabled}
 										{...field}
 									/>
@@ -253,7 +275,7 @@ export function PostForm({
 						name="content"
 						render={() => (
 							<FormItem>
-								<FormLabel>Contenido</FormLabel>
+								<FormLabel>Content</FormLabel>
 								<FormControl>
 									<Editor
 										initialContent={initialData?.content}
@@ -275,19 +297,19 @@ export function PostForm({
 						{initialData.slug && <span>Slug: {initialData.slug}</span>}
 						{initialData.createdAt && (
 							<span>
-								Creado: {format(new Date(initialData.createdAt), "d MMM yyyy")}
+								Created: {format(new Date(initialData.createdAt), "MMM d, yyyy")}
 							</span>
 						)}
 						{initialData.updatedAt && (
 							<span>
-								Actualizado:{" "}
-								{format(new Date(initialData.updatedAt), "d MMM yyyy")}
+								Updated:{" "}
+								{format(new Date(initialData.updatedAt), "MMM d, yyyy")}
 							</span>
 						)}
 						{initialData.publishedAt && (
 							<span>
-								Publicado:{" "}
-								{format(new Date(initialData.publishedAt), "d MMM yyyy")}
+								Published:{" "}
+								{format(new Date(initialData.publishedAt), "MMM d, yyyy")}
 							</span>
 						)}
 					</div>
@@ -304,20 +326,20 @@ export function PostForm({
 									disabled={isDisabled}
 								>
 									<Trash2 className="size-4" />
-									Eliminar post
+									Delete
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>¿Eliminar post?</AlertDialogTitle>
+									<AlertDialogTitle>Delete post?</AlertDialogTitle>
 									<AlertDialogDescription>
-										Esta acción no se puede deshacer. El post "
-										{initialData.title}" será eliminado permanentemente.
+										This action cannot be undone. The post "
+										{initialData.title}" will be permanently deleted.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
 									<AlertDialogCancel disabled={isDeleting}>
-										Cancelar
+										Cancel
 									</AlertDialogCancel>
 									<AlertDialogAction
 										onClick={handleDelete}
@@ -327,7 +349,7 @@ export function PostForm({
 										{isDeleting ? (
 											<Loader2 className="size-4 animate-spin" />
 										) : null}
-										Eliminar
+										Delete
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>

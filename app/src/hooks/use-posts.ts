@@ -353,6 +353,13 @@ export function usePost(_slug?: string) {
 		}
 	}, []);
 
+	/**
+	 * Set post directly without fetching (useful for navigation with pre-loaded data)
+	 */
+	const setPost = useCallback((post: PostWithContent) => {
+		setState((prev) => ({ ...prev, post, isLoading: false, error: null }));
+	}, []);
+
 	return {
 		...state,
 		fetchPost,
@@ -362,5 +369,6 @@ export function usePost(_slug?: string) {
 		deletePost,
 		publishPost,
 		unpublishPost,
+		setPost,
 	};
 }

@@ -19,15 +19,18 @@ export default function NewPost() {
 				});
 
 				if (action === "publish") {
-					toast.success("Post publicado correctamente");
+					toast.success("Post published successfully");
 				} else {
-					toast.success("Borrador guardado correctamente");
+					toast.success("Draft saved successfully");
 				}
 
-				// Navigate to edit page to continue editing or to posts list
-				navigate(`/dashboard/posts/${post.slug}/edit`);
+				// Navigate to edit page with post data to avoid refetch
+				navigate(`/dashboard/posts/${post.slug}/edit`, {
+					state: { post: { ...post, content: data.content } },
+					replace: true,
+				});
 			} catch {
-				toast.error("Error al guardar el post");
+				toast.error("Error saving post");
 			}
 		},
 		[createPost, navigate],
