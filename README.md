@@ -200,11 +200,37 @@ npm run docs:build    # Build only (outputs to docs-dist/)
 
 ## CI/CD Deployment
 
-The project uses GitHub Actions for automated deployments to Cloudflare Pages.
+The project uses GitHub Actions for automated deployments:
+- **Frontend + API Docs** → Cloudflare Pages
+- **Backend** → AWS (SAM)
 
 ### Setup GitHub Repository
 
-#### 1. Create Cloudflare API Token
+#### 1. Setup AWS OIDC (Backend Deployment)
+
+The backend uses OIDC for secure, keyless authentication with AWS. Run the setup script:
+
+```bash
+# Make the script executable
+chmod +x scripts/setup-aws-oidc.sh
+
+# Run with your AWS Account ID and GitHub repo
+./scripts/setup-aws-oidc.sh <aws-account-id> <github-username/repo-name>
+
+# Example:
+./scripts/setup-aws-oidc.sh 123456789012 soy-chrislo/writeflow
+```
+
+The script will:
+1. Create an OIDC Identity Provider in AWS IAM
+2. Create an IAM Role with the necessary permissions
+3. Output the Role ARN to configure in GitHub
+
+Then add the secret in GitHub:
+- Go to **Settings** → **Secrets and variables** → **Actions** → **Secrets**
+- Add `AWS_ROLE_ARN` with the ARN from the script output
+
+#### 2. Create Cloudflare API Token
 
 1. Go to [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)
 2. Click **Create Token** → **Custom token** → **Get started**
@@ -214,46 +240,33 @@ The project uses GitHub Actions for automated deployments to Cloudflare Pages.
    - **Account Resources**: Include → Your account
 4. Click **Create Token** and copy it
 
-#### 2. Create Cloudflare Pages Projects
-
-In [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → Create:
-
-| Project Name | Purpose |
-|--------------|---------|
-| `writeflow` | Frontend app |
-| `writeflow-api-docs` | Swagger UI documentation |
-
 #### 3. Configure GitHub Secrets
 
 Go to your repo → **Settings** → **Secrets and variables** → **Actions** → **Secrets**:
 
 | Secret | Description |
 |--------|-------------|
-| `CLOUDFLARE_API_TOKEN` | Token created in step 1 |
+| `AWS_ROLE_ARN` | IAM Role ARN from step 1 |
+| `CLOUDFLARE_API_TOKEN` | Token created in step 2 |
 | `CLOUDFLARE_ACCOUNT_ID` | Found in Cloudflare Dashboard sidebar |
-
-#### 4. Configure GitHub Variables
-
-Go to **Settings** → **Secrets and variables** → **Actions** → **Variables**:
-
-| Variable | Value |
-|----------|-------|
-| `VITE_API_URL_DEV` | `https://<api-id>.execute-api.<region>.amazonaws.com/dev` |
+| `VITE_API_URL_DEV` | Your API Gateway URL (e.g., `https://xxx.execute-api.us-east-1.amazonaws.com/dev`) |
 
 ### Deployment Flow
 
-| Event | Branch | Result |
-|-------|--------|--------|
-| Push | `main` | Deploy to production |
-| Pull Request | → `main` | Deploy preview + PR comment |
+| Event | Branch | What Deploys |
+|-------|--------|--------------|
+| Push | `main` | Frontend, Backend, API Docs |
+| Pull Request | → `main` | Frontend preview + PR comment |
 
 ### Deployed URLs
 
-| Site | URL |
-|------|-----|
-| Frontend | `https://writeflow.soychristian.com` |
-| API Docs | `https://writeflow-docs.soychristian.com` |
-| Preview (PR) | `https://<hash>.writeflow.pages.dev` |
+After deployment, URLs will be shown in the GitHub Actions summary:
+
+| Component | URL |
+|-----------|-----|
+| Frontend | `https://writeflow.pages.dev` |
+| API Docs | `https://writeflow-api-docs.pages.dev` |
+| Backend API | `https://<api-id>.execute-api.us-east-1.amazonaws.com/dev` |
 
 ## API Endpoints
 
