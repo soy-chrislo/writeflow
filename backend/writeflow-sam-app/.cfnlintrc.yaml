@@ -1,0 +1,7 @@
+# CloudFormation Linter configuration
+# https://github.com/aws-cloudformation/cfn-lint
+
+ignore_checks:
+  # W3005: Obsolete DependsOn - SAM auto-generates these for UsagePlan resources
+  # These are intentional and cannot be removed from template.yaml
+  - W3005
