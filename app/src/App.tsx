@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router";
+import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Layout } from "@/components/layout";
 import {
@@ -30,7 +31,9 @@ function App() {
 	useTokenRefresh();
 
 	return (
-		<Routes>
+		<>
+			<ApiKeyDialog />
+			<Routes>
 			{/* Public routes */}
 			<Route
 				index
@@ -133,7 +136,8 @@ function App() {
 					}
 				/>
 			</Route>
-		</Routes>
+			</Routes>
+		</>
 	);
 }
 

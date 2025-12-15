@@ -12,7 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { usePost, usePosts } from "@/hooks/use-posts";
+import { usePostsStore } from "@/store/posts";
 import type { Post, PostStatus } from "@/types/post";
 
 type StatusFilter = PostStatus | "all";
@@ -23,13 +23,15 @@ export default function MyPosts() {
 		posts,
 		isLoading,
 		error,
+		nextToken,
+		isSaving: isDeleting,
 		fetchMyPosts,
 		loadMore,
-		hasMore,
 		removePost,
 		restorePost,
-	} = usePosts();
-	const { deletePost, isSaving: isDeleting } = usePost();
+		deletePost,
+	} = usePostsStore();
+	const hasMore = !!nextToken;
 
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 	const [search, setSearch] = useState("");

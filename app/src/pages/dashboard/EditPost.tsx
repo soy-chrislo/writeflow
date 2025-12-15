@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { PostForm, type PostFormInitialData } from "@/components/posts";
 import { EditorSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { usePost } from "@/hooks/use-posts";
 import type { PostFormValues } from "@/lib/validations";
+import { usePostsStore } from "@/store/posts";
 import type { PostWithContent } from "@/types/post";
 
 export default function EditPost() {
@@ -13,16 +13,16 @@ export default function EditPost() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const {
-		post,
-		isLoading,
+		currentPost: post,
+		isLoadingPost: isLoading,
 		isSaving,
-		error,
+		postError: error,
 		fetchMyPost,
 		updatePost,
 		deletePost,
 		unpublishPost,
-		setPost,
-	} = usePost();
+		setCurrentPost: setPost,
+	} = usePostsStore();
 
 	// Check if post data was passed through navigation state (from NewPost)
 	const initialPost = (location.state as { post?: PostWithContent })?.post;

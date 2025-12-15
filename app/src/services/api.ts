@@ -18,10 +18,10 @@
  */
 
 import { toast } from "sonner";
+import { useApiKeyStore } from "@/store/api-key";
 import { useAuthStore } from "@/store/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 /**
  * Error personalizado para respuestas HTTP no exitosas
@@ -130,12 +130,13 @@ async function request<T>(
 ): Promise<T> {
 	const { body, headers, skipAuth, ...rest } = options;
 	const { idToken } = useAuthStore.getState();
+	const { apiKey, setIsValid } = useApiKeyStore.getState();
 
 	const config: RequestInit = {
 		...rest,
 		headers: {
 			"Content-Type": "application/json",
-			...(API_KEY ? { "x-api-key": API_KEY } : {}),
+			...(apiKey ? { "x-api-key": apiKey } : {}),
 			...(idToken && !skipAuth ? { Authorization: `Bearer ${idToken}` } : {}),
 			...headers,
 		},
@@ -175,7 +176,20 @@ async function request<T>(
 		// Backend error format: { success: false, error: "message" }
 		const errorMessage =
 			errorData?.error || errorData?.message || `HTTP error ${response.status}`;
+
+		// Handle invalid API key (403 Forbidden from API Gateway)
+		if (response.status === 403 && errorMessage === "Forbidden") {
+			setIsValid(false);
+			toast.error("Invalid API Key. Please enter a valid key.");
+			throw new ApiError(403, "Invalid API Key", errorData);
+		}
+
 		throw new ApiError(response.status, errorMessage, errorData);
+	}
+
+	// Mark API key as valid on successful response
+	if (apiKey) {
+		setIsValid(true);
 	}
 
 	if (response.status === 204) {

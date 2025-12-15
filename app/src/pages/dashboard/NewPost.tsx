@@ -2,12 +2,12 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { PostForm } from "@/components/posts";
-import { usePost } from "@/hooks/use-posts";
 import type { PostFormValues } from "@/lib/validations";
+import { usePostsStore } from "@/store/posts";
 
 export default function NewPost() {
 	const navigate = useNavigate();
-	const { createPost, isSaving, error } = usePost();
+	const { createPost, isSaving, postError: error } = usePostsStore();
 
 	const handleSave = useCallback(
 		async (data: PostFormValues, action: "draft" | "publish") => {

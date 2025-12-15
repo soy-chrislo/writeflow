@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { generateSlug } from "@/lib/posts";
 import { ApiError } from "@/services/api";
 import { postsService } from "@/services/posts";
 import { uploadService } from "@/services/upload";
@@ -15,18 +16,6 @@ interface UpdatePostInput {
 	title?: string;
 	content?: string;
 	status?: PostStatus;
-}
-
-/**
- * Helper to generate a slug from a title
- */
-function generateSlug(title: string): string {
-	return title
-		.toLowerCase()
-		.trim()
-		.replace(/[^\w\s-]/g, "")
-		.replace(/[\s_-]+/g, "-")
-		.replace(/^-+|-+$/g, "");
 }
 
 interface PostsState {
@@ -53,13 +42,17 @@ interface PostsState {
 		limit?: number;
 		nextToken?: string;
 	}) => Promise<void>;
-	loadMore: () => Promise<void>;
+	loadMore: (params?: { status?: string }) => Promise<void>;
+	removePost: (slug: string) => void;
+	restorePost: (post: Post) => void;
 	fetchPost: (slug: string) => Promise<PostWithContent>;
+	fetchMyPost: (slug: string) => Promise<PostWithContent>;
 	createPost: (input: CreatePostInput) => Promise<Post>;
 	updatePost: (slug: string, input: UpdatePostInput) => Promise<Post>;
 	deletePost: (slug: string) => Promise<void>;
 	publishPost: (slug: string) => Promise<Post>;
 	unpublishPost: (slug: string) => Promise<Post>;
+	setCurrentPost: (post: PostWithContent) => void;
 	clearCurrentPost: () => void;
 	clearError: () => void;
 }
@@ -121,19 +114,52 @@ export const usePostsStore = create<PostsState>()(
 			},
 
 			// Load more posts (pagination)
-			loadMore: async () => {
+			loadMore: async (params) => {
 				const { nextToken, fetchMyPosts } = get();
 				if (nextToken) {
-					await fetchMyPosts({ nextToken });
+					await fetchMyPosts({ nextToken, status: params?.status });
 				}
 			},
 
-			// Fetch single post
+			// Remove post from list optimistically
+			removePost: (slug) => {
+				set((state) => ({
+					posts: state.posts.filter((p) => p.slug !== slug),
+				}));
+			},
+
+			// Restore post to list (when optimistic delete fails)
+			restorePost: (post) => {
+				set((state) => ({
+					posts: [post, ...state.posts].sort(
+						(a, b) =>
+							new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+					),
+				}));
+			},
+
+			// Fetch single public post
 			fetchPost: async (slug) => {
 				set({ isLoadingPost: true, postError: null });
 
 				try {
 					const response = await postsService.getBySlug(slug);
+					set({ currentPost: response, isLoadingPost: false });
+					return response;
+				} catch (err) {
+					const message =
+						err instanceof ApiError ? err.message : "Failed to fetch post";
+					set({ postError: message, isLoadingPost: false });
+					throw err;
+				}
+			},
+
+			// Fetch authenticated user's post (includes drafts)
+			fetchMyPost: async (slug) => {
+				set({ isLoadingPost: true, postError: null });
+
+				try {
+					const response = await postsService.getMyBySlug(slug);
 					set({ currentPost: response, isLoadingPost: false });
 					return response;
 				} catch (err) {
@@ -296,6 +322,10 @@ export const usePostsStore = create<PostsState>()(
 					throw err;
 				}
 			},
+
+			// Set current post directly (useful for navigation with pre-loaded data)
+			setCurrentPost: (post) =>
+				set({ currentPost: post, isLoadingPost: false, postError: null }),
 
 			// Clear current post
 			clearCurrentPost: () => set({ currentPost: null, postError: null }),

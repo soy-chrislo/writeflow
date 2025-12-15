@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePosts } from "@/hooks/use-posts";
 import { useAuthStore } from "@/store/auth";
+import { usePostsStore } from "@/store/posts";
 
 export default function Blog() {
-	const { posts, isLoading, error, fetchPublicPosts, hasMore, loadMore } =
-		usePosts();
+	const { posts, isLoading, error, nextToken, fetchPublicPosts, loadMore } =
+		usePostsStore();
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const hasMore = !!nextToken;
 
 	useEffect(() => {
 		fetchPublicPosts();

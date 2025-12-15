@@ -5,13 +5,18 @@ import { Link, useNavigate, useParams } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePost } from "@/hooks/use-posts";
 import { useAuthStore } from "@/store/auth";
+import { usePostsStore } from "@/store/posts";
 
 export default function PostView() {
 	const { slug } = useParams<{ slug: string }>();
 	const navigate = useNavigate();
-	const { post, isLoading, error, fetchPost } = usePost();
+	const {
+		currentPost: post,
+		isLoadingPost: isLoading,
+		postError: error,
+		fetchPost,
+	} = usePostsStore();
 	const { user, isAuthenticated } = useAuthStore();
 
 	useEffect(() => {
