@@ -14,6 +14,8 @@ servers:
         default: us-east-1
       stage:
         default: dev
+security:
+  - ApiKeyAuth: []
 paths:
   /posts:
     options:
@@ -43,7 +45,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''GET,POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
@@ -164,7 +166,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''GET,PUT,DELETE,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
@@ -350,7 +352,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
@@ -441,7 +443,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     get:
@@ -518,7 +520,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -594,7 +596,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -625,6 +627,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Public registration is disabled (demo instance)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Public registration is disabled. Please contact the administrator.
         '409':
           description: Account with this email already exists
           content:
@@ -671,7 +682,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -701,6 +712,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Public registration is disabled (demo instance)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Public registration is disabled. Please contact the administrator.
         '404':
           description: User not found
           content:
@@ -747,7 +767,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -829,7 +849,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -907,7 +927,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -938,6 +958,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Public registration is disabled (demo instance)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Public registration is disabled. Please contact the administrator.
         '404':
           description: User not found
           content:
@@ -990,7 +1019,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -1067,7 +1096,7 @@ paths:
           default:
             statusCode: '200'
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,x-api-key'''
               method.response.header.Access-Control-Allow-Methods: '''POST,OPTIONS'''
               method.response.header.Access-Control-Allow-Origin: '''*'''
     post:
@@ -1123,6 +1152,11 @@ paths:
         passthroughBehavior: when_no_match
 components:
   securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      name: x-api-key
+      in: header
+      description: API Key for rate limiting. Contact administrator to obtain one.
     CognitoAuthorizer:
       type: apiKey
       name: Authorization

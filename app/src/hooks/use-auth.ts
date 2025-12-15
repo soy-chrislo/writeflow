@@ -113,6 +113,12 @@ export function useAuth() {
 				navigate("/auth/confirm");
 				return response;
 			} catch (err) {
+				// Check if registration is disabled (403)
+				if (err instanceof ApiError && err.status === 403) {
+					setError("REGISTRATION_DISABLED");
+					throw err;
+				}
+
 				const message =
 					err instanceof ApiError ? err.message : "Failed to register";
 				setError(message);
@@ -136,6 +142,12 @@ export function useAuth() {
 				navigate("/auth/login");
 				return response;
 			} catch (err) {
+				// Check if registration is disabled (403)
+				if (err instanceof ApiError && err.status === 403) {
+					setError("REGISTRATION_DISABLED");
+					throw err;
+				}
+
 				const message =
 					err instanceof ApiError ? err.message : "Invalid confirmation code";
 				setError(message);
@@ -157,6 +169,12 @@ export function useAuth() {
 				toast.success("Confirmation code sent! Check your email.");
 				return response;
 			} catch (err) {
+				// Check if registration is disabled (403)
+				if (err instanceof ApiError && err.status === 403) {
+					setError("REGISTRATION_DISABLED");
+					throw err;
+				}
+
 				const message =
 					err instanceof ApiError ? err.message : "Failed to resend code";
 				setError(message);

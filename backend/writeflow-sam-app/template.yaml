@@ -21,6 +21,13 @@ Parameters:
       - dev
       - staging
       - prod
+  PublicRegistrationEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Enable public user registration (set to false to allow only admin-created users)
 
 Resources:
   # ============================================
@@ -30,6 +37,9 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Sub writeflow-users-${Environment}
+      # Deshabilitar auto-registro: solo admins pueden crear usuarios
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -86,9 +96,27 @@ Resources:
       Name: !Sub writeflow-api-${Environment}
       StageName: !Ref Environment
       OpenApiVersion: '3.0.1'
+      # Throttling: limita requests por segundo (sin costo adicional)
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          ThrottlingRateLimit: 50      # Requests por segundo
+          ThrottlingBurstLimit: 100    # Burst máximo
       Auth:
         DefaultAuthorizer: CognitoAuthorizer
         AddDefaultAuthorizerToCorsPreflight: false
+        # API Key requerida para todos los endpoints (rate limiting por key)
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          UsagePlanName: !Sub writeflow-usage-plan-${Environment}
+          Description: Usage plan for Writeflow API with rate limiting
+          Throttle:
+            RateLimit: 50       # Requests por segundo por API Key
+            BurstLimit: 100     # Burst máximo por API Key
+          Quota:
+            Limit: 10000        # Requests por mes por API Key
+            Period: MONTH
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt WriteflowUserPool.Arn
@@ -99,13 +127,13 @@ Resources:
           ResponseParameters:
             Headers:
               Access-Control-Allow-Origin: "'*'"
-              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
               Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         DEFAULT_5XX:
           ResponseParameters:
             Headers:
               Access-Control-Allow-Origin: "'*'"
-              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
               Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
       DefinitionBody:
         Fn::Transform:
@@ -397,6 +425,7 @@ Resources:
       Environment:
         Variables:
           COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+          PUBLIC_REGISTRATION_ENABLED: !Ref PublicRegistrationEnabled
       Events:
         Register:
           Type: Api
@@ -425,6 +454,7 @@ Resources:
       Environment:
         Variables:
           COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+          PUBLIC_REGISTRATION_ENABLED: !Ref PublicRegistrationEnabled
       Events:
         Confirm:
           Type: Api
@@ -481,6 +511,7 @@ Resources:
       Environment:
         Variables:
           COGNITO_CLIENT_ID: !Ref WriteflowUserPoolClient
+          PUBLIC_REGISTRATION_ENABLED: !Ref PublicRegistrationEnabled
       Events:
         ResendCode:
           Type: Api
@@ -583,3 +614,7 @@ Outputs:
   ContentBucketName:
     Description: S3 Content Bucket Name
     Value: !Ref ContentBucket
+
+  ApiKeyId:
+    Description: API Key ID (use 'aws apigateway get-api-key --api-key <ID> --include-value' to get the value)
+    Value: !Ref WriteflowApiApiKey

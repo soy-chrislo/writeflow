@@ -300,6 +300,47 @@ VITE_API_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/dev
 
 See `vars/dev.env.example` for all required variables.
 
+### Backend SAM Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `Environment` | `dev` | Deployment environment (`dev`, `staging`, `prod`) |
+| `PublicRegistrationEnabled` | `false` | Enable/disable public user registration |
+
+#### Public Registration
+
+By default, public registration is **disabled** for security. The `/auth/register`, `/auth/confirm`, and `/auth/resend-code` endpoints will return a `403 Forbidden` response.
+
+**To enable public registration:**
+
+```bash
+sam deploy --parameter-overrides PublicRegistrationEnabled=true
+```
+
+Or in `samconfig.toml`:
+```toml
+parameter_overrides = "Environment=\"dev\" PublicRegistrationEnabled=\"true\""
+```
+
+**To create users manually (recommended for private instances):**
+
+```bash
+# Create user
+aws cognito-idp admin-create-user \
+  --user-pool-id <USER_POOL_ID> \
+  --username "user@example.com" \
+  --user-attributes Name=email,Value=user@example.com Name=email_verified,Value=true \
+  --temporary-password "TempPass123!" \
+  --message-action SUPPRESS
+
+# Set permanent password
+aws cognito-idp admin-set-user-password \
+  --user-pool-id <USER_POOL_ID> \
+  --username "user@example.com" \
+  --password "SecurePassword123!" \
+  --permanent
+```
+
 ## Documentation
 
 - [API Documentation](https://writeflow-docs.soychristian.com) - Swagger UI (interactive)

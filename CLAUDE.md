@@ -15,9 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 cd app
 pnpm dev          # Start Vite dev server with HMR
 pnpm build        # Type-check (tsc) then build with Vite
-pnpm lint         # Run ESLint
+pnpm lint         # Run Biome check (linting)
+pnpm lint:fix     # Auto-fix lint issues
+pnpm format       # Format with Biome
 pnpm preview      # Preview production build locally
-npx biome format --write src/  # Format with Biome (config: biome.json)
 ```
 
 ### Backend (`backend/writeflow-sam-app/`)
@@ -59,7 +60,7 @@ Note: Auth tests require AWS CLI configured with credentials to obtain Cognito t
 ## Code Style
 
 ### Frontend
-- **Formatter**: Biome with tabs and double quotes
+- **Formatter/Linter**: Biome with tabs and double quotes (linting disabled on `src/components/ui/` for shadcn/ui)
 - **Path alias**: `@/` maps to `src/` (e.g., `@/components/ui/button`)
 - **Styling**: Tailwind CSS v4 with `cn()` utility from `@/lib/utils`
 - **State**: Zustand stores in `src/store/`
@@ -70,6 +71,15 @@ Note: Auth tests require AWS CLI configured with credentials to obtain Cognito t
 - Shared types in `src/types/` (Post interface, API response types)
 - Utilities in `src/utils/` (response helpers, validation)
 - Build with esbuild (configured in template.yaml)
+- OpenAPI spec is modular (`openapi/` directory) - bundle with `npm run openapi:bundle` before deploy
+
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys on push to `main`:
+- **Frontend**: Cloudflare Pages (lint → build → deploy)
+- **Backend**: AWS SAM via OIDC (validate → build → deploy)
+- **API Docs**: Cloudflare Pages (Swagger UI)
+- Pull requests get preview deployments with URL comments
 
 ## Architecture
 
@@ -109,6 +119,9 @@ AWS SAM template (`template.yaml`) defines:
 | `POST /upload-url` | Yes | Get presigned URL for S3 upload |
 | `POST /auth/*` | No | Auth endpoints (register, confirm, login, refresh, forgot-password, reset-password, resend-code) |
 
+### API Response Format
+Backend handlers wrap all responses in `{ success: true, data: T }` format. The frontend API client (`services/api.ts`) automatically unwraps this, so service functions receive just `T`.
+
 ### Authentication Flow
 - **Important**: API Gateway uses Cognito User Pool Authorizer which requires **ID tokens** (not access tokens)
 - Tokens stored in localStorage via Zustand persist
@@ -127,6 +140,7 @@ AWS SAM template (`template.yaml`) defines:
 
 ## Important Notes
 
+- **Public registration disabled by default**: `PublicRegistrationEnabled=false` - endpoints `/auth/register`, `/auth/confirm`, `/auth/resend-code` return 403. Users must be created via `aws cognito-idp admin-create-user`.
 - **No frontend unit tests**: The frontend doesn't have unit tests configured. E2E tests cover backend API only.
 - **Local API limitations**: `sam local start-api` won't have working Cognito auth - use deployed backend for auth testing.
 - **Content storage**: Post HTML content is stored in S3 (not DynamoDB) to keep items small. The `contentKey` field references the S3 object.

@@ -26,7 +26,7 @@ posts:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   get:
@@ -149,7 +149,7 @@ posts-by-slug:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'GET,PUT,DELETE,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   get:
@@ -338,7 +338,7 @@ my-posts:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   get:
@@ -430,7 +430,7 @@ my-posts-by-slug:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   get:

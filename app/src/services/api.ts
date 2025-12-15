@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 /**
  * Error personalizado para respuestas HTTP no exitosas
@@ -134,6 +135,7 @@ async function request<T>(
 		...rest,
 		headers: {
 			"Content-Type": "application/json",
+			...(API_KEY ? { "x-api-key": API_KEY } : {}),
 			...(idToken && !skipAuth ? { Authorization: `Bearer ${idToken}` } : {}),
 			...headers,
 		},

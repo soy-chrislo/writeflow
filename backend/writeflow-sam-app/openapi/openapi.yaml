@@ -42,8 +42,17 @@ paths:
   /auth/reset-password:
     $ref: 'paths/auth.yaml#/auth-reset-password'
 
+# API Key requerida para todos los endpoints (rate limiting)
+security:
+  - ApiKeyAuth: []
+
 components:
   securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      name: x-api-key
+      in: header
+      description: API Key for rate limiting. Contact administrator to obtain one.
     CognitoAuthorizer:
       type: apiKey
       name: Authorization

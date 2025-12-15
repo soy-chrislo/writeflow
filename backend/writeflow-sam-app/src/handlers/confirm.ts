@@ -16,9 +16,14 @@ interface ConfirmInput {
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
+const PUBLIC_REGISTRATION_ENABLED = process.env.PUBLIC_REGISTRATION_ENABLED === 'true';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    if (!PUBLIC_REGISTRATION_ENABLED) {
+      return errorResponse('Public registration is disabled. Please contact the administrator.', 403);
+    }
+
     if (!event.body) {
       return errorResponse('Request body is required', 400);
     }

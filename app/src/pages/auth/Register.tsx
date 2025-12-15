@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ShieldAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import { z } from "zod";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -92,17 +94,44 @@ export default function Register() {
 						<CardDescription>Enter your details to get started</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{error && (
-							<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-								{error}
-								<button
-									type="button"
-									onClick={clearError}
-									className="ml-2 underline"
-								>
-									Dismiss
-								</button>
-							</div>
+						{error === "REGISTRATION_DISABLED" ? (
+							<Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
+								<ShieldAlert className="h-4 w-4 text-amber-500" />
+								<AlertTitle className="text-amber-500">
+									Registration Disabled
+								</AlertTitle>
+								<AlertDescription className="text-muted-foreground">
+									<p className="mb-2">
+										Public registration is currently disabled for security
+										reasons. This is a demo instance.
+									</p>
+									<p className="text-sm">
+										If you need access, please contact the administrator to
+										create an account for you.
+									</p>
+									<div className="mt-3">
+										<Link
+											to="/auth/login"
+											className="text-primary hover:underline font-medium text-sm"
+										>
+											Already have an account? Sign in
+										</Link>
+									</div>
+								</AlertDescription>
+							</Alert>
+						) : (
+							error && (
+								<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+									{error}
+									<button
+										type="button"
+										onClick={clearError}
+										className="ml-2 underline"
+									>
+										Dismiss
+									</button>
+								</div>
+							)
 						)}
 
 						<Form {...form}>

@@ -26,7 +26,7 @@ auth-register:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -57,6 +57,15 @@ auth-register:
           application/json:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Public registration is disabled (demo instance)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+            example:
+              success: false
+              error: "Public registration is disabled. Please contact the administrator."
       '409':
         description: Account with this email already exists
         content:
@@ -104,7 +113,7 @@ auth-confirm:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -134,6 +143,15 @@ auth-confirm:
           application/json:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Public registration is disabled (demo instance)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+            example:
+              success: false
+              error: "Public registration is disabled. Please contact the administrator."
       '404':
         description: User not found
         content:
@@ -181,7 +199,7 @@ auth-login:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -264,7 +282,7 @@ auth-refresh:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -343,7 +361,7 @@ auth-resend-code:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -374,6 +392,15 @@ auth-resend-code:
           application/json:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
+      '403':
+        description: Public registration is disabled (demo instance)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+            example:
+              success: false
+              error: "Public registration is disabled. Please contact the administrator."
       '404':
         description: User not found
         content:
@@ -427,7 +454,7 @@ auth-forgot-password:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
@@ -505,7 +532,7 @@ auth-reset-password:
         default:
           statusCode: '200'
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,x-api-key'"
             method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
             method.response.header.Access-Control-Allow-Origin: "'*'"
   post:
