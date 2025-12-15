@@ -227,6 +227,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install esbuild
+        run: npm install -g esbuild
+
       - name: Setup AWS SAM
         uses: aws-actions/setup-sam@v2
         with:
