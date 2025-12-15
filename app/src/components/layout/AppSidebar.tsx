@@ -34,8 +34,8 @@ export function AppSidebar() {
 
 	return (
 		<Sidebar collapsible="none">
-			<SidebarHeader className="border-b px-4 py-3">
-				<span className="text-lg font-semibold">Writeflow</span>
+			<SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+				<span className="text-lg font-semibold text-sidebar-foreground">Writeflow</span>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>
@@ -44,43 +44,43 @@ export function AppSidebar() {
 						<SidebarMenu>
 							{navItems.map((item) => (
 								<SidebarMenuItem key={item.href}>
-									<SidebarMenuButton asChild>
-										<NavLink
-											to={item.href}
-											className={({ isActive }) =>
-												isActive ? "data-[active=true]" : ""
-											}
-										>
-											{({ isActive }) => (
-												<>
-													<item.icon
-														className="size-4"
-														data-active={isActive}
-													/>
-													<span>{item.title}</span>
-												</>
-											)}
-										</NavLink>
-									</SidebarMenuButton>
+									<NavLink
+										to={item.href}
+										end={item.href === "/dashboard/posts"}
+									>
+										{({ isActive }) => (
+											<SidebarMenuButton
+												isActive={isActive}
+												className={
+													isActive
+														? "bg-sidebar-accent text-sidebar-accent-foreground"
+														: "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+												}
+											>
+												<item.icon className="size-4" />
+												<span>{item.title}</span>
+											</SidebarMenuButton>
+										)}
+									</NavLink>
 								</SidebarMenuItem>
 							))}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
 			</SidebarContent>
-			<SidebarFooter className="border-t p-4">
-				<div className="flex flex-col gap-2">
+			<SidebarFooter className="border-t border-sidebar-border p-4">
+				<div className="flex flex-col gap-3">
 					{user && (
-						<div className="truncate text-sm text-muted-foreground">
+						<div className="truncate text-sm text-sidebar-foreground/70">
 							{user.email}
 						</div>
 					)}
 					<SidebarMenuButton
 						onClick={logout}
-						className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+						className="w-full justify-start text-red-400 hover:bg-red-500/20 hover:text-red-300"
 					>
 						<LogOut className="size-4" />
-						<span>Cerrar sesión</span>
+						<span>Log out</span>
 					</SidebarMenuButton>
 				</div>
 			</SidebarFooter>

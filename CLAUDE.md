@@ -27,6 +27,21 @@ sam build         # Build Lambda functions with esbuild
 sam local start-api  # Run API locally (requires Docker)
 sam deploy        # Deploy to AWS
 sam logs -n CreatePostFunction --tail  # Tail Lambda logs
+
+# NPM script shortcuts (preferred)
+npm run build           # Bundle OpenAPI + sam build
+npm run deploy          # Build then deploy
+npm run deploy:guided   # Build then deploy with prompts
+npm run test:e2e        # Run all E2E tests
+npm run test:e2e:quick  # Run quick E2E tests
+
+# OpenAPI spec (used for documentation)
+npm run openapi:bundle  # Bundle OpenAPI spec into openapi.yaml
+npm run openapi:lint    # Lint OpenAPI spec
+
+# API documentation (Swagger UI)
+npm run docs:build      # Build to docs-dist/
+npm run docs:serve      # Build and serve at http://localhost:8080
 ```
 
 ### E2E Tests
@@ -37,6 +52,7 @@ cd backend/writeflow-sam-app/tests/e2e
 ./run-tests.sh --quick      # Smoke tests
 ./run-tests.sh --report     # Generate HTML report
 hurl --test --variables-file vars/dev.env posts/create-post.hurl  # Run single test
+./auth/create-test-user.sh  # Create test user in Cognito (run once before auth tests)
 ```
 Note: Auth tests require AWS CLI configured with credentials to obtain Cognito tokens.
 
@@ -51,6 +67,8 @@ Note: Auth tests require AWS CLI configured with credentials to obtain Cognito t
 
 ### Backend
 - TypeScript Lambda handlers in `src/handlers/`
+- Shared types in `src/types/` (Post interface, API response types)
+- Utilities in `src/utils/` (response helpers, validation)
 - Build with esbuild (configured in template.yaml)
 
 ## Architecture
@@ -79,15 +97,17 @@ AWS SAM template (`template.yaml`) defines:
 - **Cognito**: User pool for authentication
 
 ### Key API Endpoints
-| Endpoint | Auth | Handler |
-|----------|------|---------|
-| `GET /posts` | No | listPosts (public posts) |
-| `GET /my/posts` | Yes | listPosts (user's posts) |
-| `POST /posts` | Yes | createPost |
-| `PUT /posts/{slug}` | Yes | updatePost |
-| `DELETE /posts/{slug}` | Yes | deletePost |
-| `POST /upload-url` | Yes | getUploadUrl |
-| `POST /auth/*` | No | register, confirm, login, refresh, etc. |
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `GET /posts` | No | List published posts only |
+| `GET /posts/{slug}` | No | Get a published post |
+| `GET /my/posts` | Yes | List user's posts (including drafts) |
+| `GET /my/posts/{slug}` | Yes | Get user's post (including drafts) |
+| `POST /posts` | Yes | Create a post |
+| `PUT /posts/{slug}` | Yes | Update a post |
+| `DELETE /posts/{slug}` | Yes | Delete a post |
+| `POST /upload-url` | Yes | Get presigned URL for S3 upload |
+| `POST /auth/*` | No | Auth endpoints (register, confirm, login, refresh, forgot-password, reset-password, resend-code) |
 
 ### Authentication Flow
 - **Important**: API Gateway uses Cognito User Pool Authorizer which requires **ID tokens** (not access tokens)
@@ -104,3 +124,9 @@ AWS SAM template (`template.yaml`) defines:
 - **Primary key**: `slug` (HASH) - direct post lookup
 - **author-index GSI**: Query posts by `authorId` for `/my/posts`
 - **status-index GSI**: Query posts by `status` (published/draft) for `/posts`
+
+## Important Notes
+
+- **No frontend unit tests**: The frontend doesn't have unit tests configured. E2E tests cover backend API only.
+- **Local API limitations**: `sam local start-api` won't have working Cognito auth - use deployed backend for auth testing.
+- **Content storage**: Post HTML content is stored in S3 (not DynamoDB) to keep items small. The `contentKey` field references the S3 object.

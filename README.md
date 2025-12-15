@@ -20,15 +20,28 @@ A serverless CMS with a rich text editor and live preview. Built as a portfolio 
 - Vite 7 + SWC
 - TipTap (rich text editor)
 - Zustand (state management)
-- shadcn/ui + Tailwind CSS v4
+- react-hook-form + Zod (forms & validation)
+- react-router (routing)
+- shadcn/ui + Radix UI + Tailwind CSS v4
+- @tanstack/react-table (data tables)
+- Lucide React (icons)
 - Biome (linting/formatting)
 
 **Backend:**
 - AWS SAM (Serverless Application Model)
-- Lambda (Node.js 22)
+- Lambda (Node.js 22) + esbuild
 - API Gateway + Cognito Authorizer
-- DynamoDB
-- S3
+- DynamoDB (with GSIs)
+- S3 (presigned URLs)
+- OpenAPI 3.0 + Redocly (API documentation)
+
+**Testing & Local Dev:**
+- Hurl (E2E API tests)
+- Docker + DynamoDB Local
+
+**CI/CD & Hosting:**
+- GitHub Actions (automated deployments)
+- Cloudflare Pages (frontend + API docs)
 
 ## Prerequisites
 
@@ -116,10 +129,16 @@ writeflow/
 │       │   ├── handlers/         # Lambda function handlers
 │       │   ├── types/            # TypeScript types
 │       │   └── utils/            # Shared utilities
+│       ├── openapi/              # OpenAPI spec (modular)
+│       ├── docs/                 # Swagger UI source
 │       ├── tests/
 │       │   └── e2e/              # Hurl E2E tests
 │       ├── template.yaml         # SAM/CloudFormation template
 │       └── samconfig.toml.example
+│
+├── .github/
+│   └── workflows/
+│       └── deploy.yml            # CI/CD for frontend + API docs
 │
 ├── docs/                         # Documentation
 │   ├── DEPLOY.md                 # Deployment guide
@@ -171,6 +190,71 @@ cp vars/dev.env.example vars/dev.env
 ./run-tests.sh --report     # Generate HTML report
 ```
 
+### API Documentation (Swagger UI)
+
+```bash
+cd backend/writeflow-sam-app
+npm run docs:serve    # Build and serve at http://localhost:8080
+npm run docs:build    # Build only (outputs to docs-dist/)
+```
+
+## CI/CD Deployment
+
+The project uses GitHub Actions for automated deployments to Cloudflare Pages.
+
+### Setup GitHub Repository
+
+#### 1. Create Cloudflare API Token
+
+1. Go to [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)
+2. Click **Create Token** → **Custom token** → **Get started**
+3. Configure:
+   - **Token name**: `GitHub Actions - Writeflow`
+   - **Permissions**: Account → Cloudflare Pages → **Edit**
+   - **Account Resources**: Include → Your account
+4. Click **Create Token** and copy it
+
+#### 2. Create Cloudflare Pages Projects
+
+In [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → Create:
+
+| Project Name | Purpose |
+|--------------|---------|
+| `writeflow` | Frontend app |
+| `writeflow-api-docs` | Swagger UI documentation |
+
+#### 3. Configure GitHub Secrets
+
+Go to your repo → **Settings** → **Secrets and variables** → **Actions** → **Secrets**:
+
+| Secret | Description |
+|--------|-------------|
+| `CLOUDFLARE_API_TOKEN` | Token created in step 1 |
+| `CLOUDFLARE_ACCOUNT_ID` | Found in Cloudflare Dashboard sidebar |
+
+#### 4. Configure GitHub Variables
+
+Go to **Settings** → **Secrets and variables** → **Actions** → **Variables**:
+
+| Variable | Value |
+|----------|-------|
+| `VITE_API_URL_DEV` | `https://<api-id>.execute-api.<region>.amazonaws.com/dev` |
+
+### Deployment Flow
+
+| Event | Branch | Result |
+|-------|--------|--------|
+| Push | `main` | Deploy to production |
+| Pull Request | → `main` | Deploy preview + PR comment |
+
+### Deployed URLs
+
+| Site | URL |
+|------|-----|
+| Frontend | `https://writeflow.soychristian.com` |
+| API Docs | `https://writeflow-docs.soychristian.com` |
+| Preview (PR) | `https://<hash>.writeflow.pages.dev` |
+
 ## API Endpoints
 
 | Method | Endpoint | Auth | Description |
@@ -205,7 +289,9 @@ See `vars/dev.env.example` for all required variables.
 
 ## Documentation
 
+- [API Documentation](https://writeflow-docs.soychristian.com) - Swagger UI (interactive)
 - [Deployment Guide](docs/DEPLOY.md) - Step-by-step AWS deployment
+- [Frontend Deployment](docs/DEPLOY-FRONTEND.md) - Cloudflare Pages setup
 - [Architecture](docs/ARCHITECTURE.md) - System design and decisions
 
 ## Troubleshooting

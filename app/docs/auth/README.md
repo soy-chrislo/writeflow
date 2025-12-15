@@ -1,26 +1,26 @@
-# Módulo de Autenticación
+# Authentication Module
 
-Guía rápida para usar y extender el sistema de autenticación de Writeflow.
+Quick guide to use and extend the Writeflow authentication system.
 
-## Arquitectura
+## Architecture
 
 ```
 src/
-├── store/auth.ts              # Estado global (Zustand)
+├── store/auth.ts              # Global state (Zustand)
 ├── services/
-│   ├── api.ts                 # HTTP client con auth automático
-│   └── auth.ts                # Endpoints de auth
+│   ├── api.ts                 # HTTP client with automatic auth
+│   └── auth.ts                # Auth endpoints
 ├── hooks/
-│   ├── use-auth.ts            # Hook principal de auth
-│   └── use-token-refresh.ts   # Refresh proactivo
+│   ├── use-auth.ts            # Main auth hook
+│   └── use-token-refresh.ts   # Proactive refresh
 ├── components/auth/
-│   └── ProtectedRoute.tsx     # Guard de rutas
-└── types/auth.ts              # Tipos TypeScript
+│   └── ProtectedRoute.tsx     # Route guard
+└── types/auth.ts              # TypeScript types
 ```
 
-## Uso Básico
+## Basic Usage
 
-### Verificar si usuario está autenticado
+### Check if user is authenticated
 
 ```tsx
 import { useAuthStore } from "@/store/auth";
@@ -29,10 +29,10 @@ function MyComponent() {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
-    return <p>No autenticado</p>;
+    return <p>Not authenticated</p>;
   }
 
-  return <p>Hola, {user?.name}</p>;
+  return <p>Hello, {user?.name}</p>;
 }
 ```
 
@@ -47,7 +47,7 @@ function LoginForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await login({ email, password });
-    // Redirige automáticamente a "/" si exitoso
+    // Automatically redirects to "/" on success
   };
 
   return (
@@ -55,7 +55,7 @@ function LoginForm() {
       {error && <p className="text-red-500">{error}</p>}
       {/* inputs... */}
       <button disabled={isLoading}>
-        {isLoading ? "Cargando..." : "Iniciar sesión"}
+        {isLoading ? "Loading..." : "Sign in"}
       </button>
     </form>
   );
@@ -72,16 +72,16 @@ function LogoutButton() {
 
   return (
     <button onClick={logout}>
-      Cerrar sesión
+      Log out
     </button>
   );
 }
 ```
 
-### Proteger una ruta
+### Protect a route
 
 ```tsx
-// En App.tsx
+// In App.tsx
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 <Route
@@ -96,101 +96,101 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 </Route>
 ```
 
-### Hacer requests autenticados
+### Make authenticated requests
 
 ```tsx
 import { api } from "@/services/api";
 
-// El token se añade automáticamente
+// Token is automatically added
 const posts = await api.get<Post[]>("/my/posts");
 
-// POST con body
+// POST with body
 const newPost = await api.post<Post>("/my/posts", {
-  title: "Mi post",
+  title: "My post",
   contentKey: "abc123",
 });
 
-// Request sin auth (público)
+// Request without auth (public)
 const publicPosts = await api.get<Post[]>("/posts", { skipAuth: true });
 ```
 
-### Acceder al token fuera de React
+### Access token outside React
 
 ```tsx
 import { useAuthStore } from "@/store/auth";
 
-// En un service o utility
+// In a service or utility
 const { idToken } = useAuthStore.getState();
 
-// Verificar expiración
+// Check expiration
 const isExpired = useAuthStore.getState().isTokenExpired();
 ```
 
-## Flujos de Auth
+## Auth Flows
 
-### Registro nuevo usuario
+### New user registration
 
 ```
-1. Usuario llena formulario de registro
+1. User fills registration form
 2. useAuth().register() → POST /auth/register
-3. Backend crea usuario en Cognito (estado UNCONFIRMED)
-4. Redirige a /auth/confirm con pendingEmail guardado
-5. Usuario ingresa código de 6 dígitos
+3. Backend creates user in Cognito (UNCONFIRMED state)
+4. Redirects to /auth/confirm with pendingEmail saved
+5. User enters 6-digit code
 6. useAuth().confirmCode() → POST /auth/confirm
-7. Backend confirma y retorna tokens
-8. setTokens() guarda en store
-9. Redirige a "/"
+7. Backend confirms and returns tokens
+8. setTokens() saves to store
+9. Redirects to "/"
 ```
 
-### Login existente
+### Existing user login
 
 ```
-1. Usuario ingresa email/password
+1. User enters email/password
 2. useAuth().login() → POST /auth/login
-3. Backend valida con Cognito
-4. Retorna { user, accessToken, idToken, refreshToken }
-5. setTokens() guarda en store + localStorage
-6. Redirige a "/"
+3. Backend validates with Cognito
+4. Returns { user, accessToken, idToken, refreshToken }
+5. setTokens() saves to store + localStorage
+6. Redirects to "/"
 ```
 
-### Refresh de tokens
+### Token refresh
 
 ```
-Proactivo (useTokenRefresh):
-1. Timer se programa para 5 min antes de expiración
-2. Al dispararse, llama authService.refreshToken()
-3. updateTokens() actualiza store
-4. Se reprograma timer para nuevo token
+Proactive (useTokenRefresh):
+1. Timer is scheduled for 5 min before expiration
+2. When triggered, calls authService.refreshToken()
+3. updateTokens() updates store
+4. Timer is rescheduled for new token
 
-Reactivo (api.ts):
-1. Request recibe 401
-2. Llama refreshToken()
-3. Si exitoso, retry del request original
-4. Si falla, logout()
+Reactive (api.ts):
+1. Request receives 401
+2. Calls refreshToken()
+3. If successful, retries original request
+4. If fails, logout()
 ```
 
-## Extender el módulo
+## Extending the module
 
-### Agregar nuevo campo al usuario
+### Add new field to user
 
-1. Actualizar tipo en `types/auth.ts`:
+1. Update type in `types/auth.ts`:
 ```ts
 export interface User {
   id: string;
   email: string;
   name: string;
-  avatar?: string; // nuevo campo
+  avatar?: string; // new field
 }
 ```
 
-2. El backend debe incluirlo en la respuesta de login/confirm
+2. Backend must include it in login/confirm response
 
-### Agregar nuevo endpoint de auth
+### Add new auth endpoint
 
-1. Agregar al service `services/auth.ts`:
+1. Add to service `services/auth.ts`:
 ```ts
 export const authService = {
-  // ... existentes
+  // ... existing
 
   changePassword: async (data: ChangePasswordRequest) => {
     return api.post<MessageResponse>("/auth/change-password", data);
@@ -198,7 +198,7 @@ export const authService = {
 };
 ```
 
-2. Agregar al hook `hooks/use-auth.ts`:
+2. Add to hook `hooks/use-auth.ts`:
 ```ts
 const changePassword = useCallback(
   async (data: ChangePasswordRequest) => {
@@ -216,38 +216,38 @@ const changePassword = useCallback(
 );
 ```
 
-### Agregar nueva ruta protegida
+### Add new protected route
 
 ```tsx
-// En App.tsx, dentro del Route con ProtectedRoute
-<Route path="/mi-nueva-ruta" element={<MiNuevaPage />} />
+// In App.tsx, inside the Route with ProtectedRoute
+<Route path="/my-new-route" element={<MyNewPage />} />
 ```
 
-### Agregar ruta pública
+### Add public route
 
 ```tsx
-// En App.tsx, fuera del ProtectedRoute
+// In App.tsx, outside ProtectedRoute
 <Route path="/public" element={<PublicPage />} />
 ```
 
 ## Debugging
 
-### Ver estado del store
+### View store state
 
 ```ts
-// En consola del browser
+// In browser console
 localStorage.getItem("writeflow-auth");
 ```
 
-### Forzar logout
+### Force logout
 
 ```ts
-// En consola
+// In console
 localStorage.removeItem("writeflow-auth");
 location.reload();
 ```
 
-### Ver token decodificado
+### View decoded token
 
 ```ts
 import { jwtDecode } from "jwt-decode";
@@ -257,10 +257,10 @@ console.log(jwtDecode(idToken));
 // { sub, email, exp, iat, ... }
 ```
 
-## Decisiones arquitectónicas
+## Architectural decisions
 
-Ver [ADR 001: Gestión de Tokens](../adr/001-auth-token-management.md) para entender:
-- Por qué usamos `idToken` en Authorization header
-- Por qué almacenamos en localStorage
-- Estrategia híbrida de refresh (proactivo + reactivo)
-- Manejo de requests concurrentes durante refresh
+See [ADR 001: Token Management](../adr/001-auth-token-management.md) to understand:
+- Why we use `idToken` in Authorization header
+- Why we store in localStorage
+- Hybrid refresh strategy (proactive + reactive)
+- Handling concurrent requests during refresh

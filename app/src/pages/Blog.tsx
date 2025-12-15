@@ -26,14 +26,14 @@ export default function Blog() {
 	return (
 		<div className="min-h-screen bg-background">
 			{/* Header */}
-			<header className="border-b">
+			<header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
 				<div className="container mx-auto px-4 flex items-center justify-between py-4">
-					<Link to="/" className="text-2xl font-bold">
+					<Link to="/" className="text-2xl font-bold text-primary">
 						Writeflow
 					</Link>
 					<nav>
 						{isAuthenticated ? (
-							<Button asChild variant="outline">
+							<Button asChild>
 								<Link to="/dashboard">Dashboard</Link>
 							</Button>
 						) : (
@@ -50,12 +50,32 @@ export default function Blog() {
 				</div>
 			</header>
 
+			{/* Hero Section */}
+			<section className="relative overflow-hidden border-b bg-gradient-to-br from-primary/5 via-background to-accent/10">
+				<div className="container mx-auto px-4 py-16 md:py-24">
+					<div className="max-w-2xl">
+						<h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+							Welcome to <span className="text-primary">Writeflow</span>
+						</h1>
+						<p className="text-lg text-muted-foreground mb-6">
+							Discover stories, ideas, and insights from our community of writers.
+						</p>
+						{!isAuthenticated && (
+							<Button asChild size="lg">
+								<Link to="/auth/register">Start Writing</Link>
+							</Button>
+						)}
+					</div>
+				</div>
+				<div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+			</section>
+
 			{/* Main content */}
-			<main className="container mx-auto px-4 py-8">
+			<main className="container mx-auto px-4 py-12">
 				<div className="mb-8">
-					<h1 className="text-3xl font-bold mb-2">Blog</h1>
+					<h2 className="text-2xl font-bold mb-2">Latest Posts</h2>
 					<p className="text-muted-foreground">
-						Latest posts from our community
+						Fresh content from our community
 					</p>
 				</div>
 
@@ -92,20 +112,21 @@ export default function Blog() {
 						<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 							{posts.map((post) => (
 								<Link key={post.slug} to={`/posts/${post.slug}`}>
-									<Card className="h-full hover:shadow-md transition-shadow">
-										<CardHeader>
-											<div className="flex items-center gap-2 mb-2">
-												<Badge variant="secondary">
+									<Card className="group h-full hover:shadow-lg hover:border-primary/20 transition-all duration-300">
+										<CardHeader className="space-y-3">
+											<div className="flex items-center gap-2">
+												<Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
 													{post.status === "published" ? "Published" : "Draft"}
 												</Badge>
+												{post.publishedAt && (
+													<span className="text-xs text-muted-foreground">
+														{format(new Date(post.publishedAt), "MMM d, yyyy")}
+													</span>
+												)}
 											</div>
-											<CardTitle className="line-clamp-2">
+											<CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
 												{post.title}
 											</CardTitle>
-											<CardDescription>
-												{post.publishedAt &&
-													format(new Date(post.publishedAt), "MMMM d, yyyy")}
-											</CardDescription>
 										</CardHeader>
 										<CardContent>
 											<p className="text-sm text-muted-foreground line-clamp-3">
@@ -135,7 +156,18 @@ export default function Blog() {
 			{/* Footer */}
 			<footer className="border-t mt-auto">
 				<div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-					Writeflow - A simple blogging platform
+					<p>Writeflow - A simple blogging platform</p>
+					<p className="mt-1">
+						Made by{" "}
+						<a
+							href="https://github.com/soy-chrislo"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+						>
+							Chrislo
+						</a>
+					</p>
 				</div>
 			</footer>
 		</div>

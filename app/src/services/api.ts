@@ -75,7 +75,7 @@ async function refreshToken(): Promise<boolean> {
 
 	if (!token) {
 		logout();
-		toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+		toast.error("Your session has expired. Please log in again.");
 		return false;
 	}
 
@@ -88,7 +88,7 @@ async function refreshToken(): Promise<boolean> {
 
 		if (!response.ok) {
 			logout();
-			toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+			toast.error("Your session has expired. Please log in again.");
 			return false;
 		}
 
@@ -103,7 +103,7 @@ async function refreshToken(): Promise<boolean> {
 		return true;
 	} catch {
 		logout();
-		toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+		toast.error("Your session has expired. Please log in again.");
 		return false;
 	}
 }

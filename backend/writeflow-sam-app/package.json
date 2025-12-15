@@ -5,6 +5,9 @@
   "scripts": {
     "openapi:bundle": "redocly bundle openapi/openapi.yaml -o openapi.yaml",
     "openapi:lint": "redocly lint openapi/openapi.yaml",
+    "openapi:preview": "redocly preview-docs openapi/openapi.yaml",
+    "docs:build": "npm run openapi:bundle && mkdir -p docs-dist && cp openapi.yaml docs-dist/ && cp docs/index.html docs-dist/",
+    "docs:serve": "npm run docs:build && npx serve docs-dist -p 8080",
     "build": "npm run openapi:bundle && sam build",
     "deploy": "npm run build && sam deploy",
     "deploy:guided": "npm run build && sam deploy --guided",

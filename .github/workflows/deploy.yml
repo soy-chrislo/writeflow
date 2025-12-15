@@ -1,0 +1,295 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'backend/writeflow-sam-app/openapi/**'
+      - 'backend/writeflow-sam-app/docs/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+
+env:
+  NODE_VERSION: '22'
+  DOMAIN: soychristian.com
+  FRONTEND_SUBDOMAIN: writeflow
+  API_DOCS_SUBDOMAIN: writeflow-docs
+
+jobs:
+  # ============================================
+  # Frontend Jobs
+  # ============================================
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: app
+
+      - name: Run linter
+        run: pnpm lint
+        working-directory: app
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+        working-directory: app
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: lint-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: app
+
+      - name: Build
+        run: pnpm build
+        working-directory: app
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL_DEV }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: app/dist
+          retention-days: 1
+
+  deploy-frontend-preview:
+    name: Deploy Frontend (Preview)
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: app/dist
+
+      - name: Deploy to Cloudflare Pages (Preview)
+        uses: cloudflare/wrangler-action@v3
+        id: deploy
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy app/dist --project-name=writeflow --branch=${{ github.head_ref }}
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Deploy Preview Ready!\n\n**Frontend:** ${{ steps.deploy.outputs.deployment-url }}\n\n*Commit: \`${{ github.sha }}\`*`
+            })
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: app/dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        id: deploy
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy app/dist --project-name=writeflow --branch=main
+
+      - name: Setup Custom Domain
+        run: |
+          CUSTOM_DOMAIN="${{ env.FRONTEND_SUBDOMAIN }}.${{ env.DOMAIN }}"
+          API_BASE="https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects/writeflow/domains"
+
+          echo "Checking if $CUSTOM_DOMAIN is already configured..."
+
+          # Get existing domains
+          RESPONSE=$(curl -s -X GET "$API_BASE" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json")
+
+          # Check if domain exists in the response
+          if echo "$RESPONSE" | jq -e ".result[] | select(.name == \"$CUSTOM_DOMAIN\")" > /dev/null 2>&1; then
+            echo "✅ Custom domain $CUSTOM_DOMAIN already configured"
+          else
+            echo "Adding custom domain $CUSTOM_DOMAIN..."
+            ADD_RESPONSE=$(curl -s -X POST "$API_BASE" \
+              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"$CUSTOM_DOMAIN\"}")
+
+            # Check if successful
+            if echo "$ADD_RESPONSE" | jq -e '.success == true' > /dev/null 2>&1; then
+              echo "✅ Custom domain $CUSTOM_DOMAIN added successfully"
+            else
+              echo "⚠️ Failed to add custom domain. Response:"
+              echo "$ADD_RESPONSE" | jq .
+              # Don't fail the workflow - domain might need manual DNS setup first time
+            fi
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Frontend URL:** https://${{ env.FRONTEND_SUBDOMAIN }}.${{ env.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # API Docs Jobs
+  # ============================================
+  build-api-docs:
+    name: Build API Docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: backend/writeflow-sam-app
+
+      - name: Build docs
+        run: npm run docs:build
+        working-directory: backend/writeflow-sam-app
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs-build
+          path: backend/writeflow-sam-app/docs-dist
+          retention-days: 1
+
+  deploy-api-docs:
+    name: Deploy API Docs
+    runs-on: ubuntu-latest
+    needs: build-api-docs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: api-docs
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-docs-build
+          path: docs-dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        id: deploy
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs-dist --project-name=writeflow-api-docs --branch=main
+
+      - name: Setup Custom Domain
+        run: |
+          CUSTOM_DOMAIN="${{ env.API_DOCS_SUBDOMAIN }}.${{ env.DOMAIN }}"
+          API_BASE="https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects/writeflow-api-docs/domains"
+
+          echo "Checking if $CUSTOM_DOMAIN is already configured..."
+
+          # Get existing domains
+          RESPONSE=$(curl -s -X GET "$API_BASE" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json")
+
+          # Check if domain exists in the response
+          if echo "$RESPONSE" | jq -e ".result[] | select(.name == \"$CUSTOM_DOMAIN\")" > /dev/null 2>&1; then
+            echo "✅ Custom domain $CUSTOM_DOMAIN already configured"
+          else
+            echo "Adding custom domain $CUSTOM_DOMAIN..."
+            ADD_RESPONSE=$(curl -s -X POST "$API_BASE" \
+              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"$CUSTOM_DOMAIN\"}")
+
+            # Check if successful
+            if echo "$ADD_RESPONSE" | jq -e '.success == true' > /dev/null 2>&1; then
+              echo "✅ Custom domain $CUSTOM_DOMAIN added successfully"
+            else
+              echo "⚠️ Failed to add custom domain. Response:"
+              echo "$ADD_RESPONSE" | jq .
+              # Don't fail the workflow - domain might need manual DNS setup first time
+            fi
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## API Docs Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Swagger UI:** https://${{ env.API_DOCS_SUBDOMAIN }}.${{ env.DOMAIN }}" >> $GITHUB_STEP_SUMMARY

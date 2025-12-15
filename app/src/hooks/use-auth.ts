@@ -219,7 +219,7 @@ export function useAuth() {
 			// Ignore errors on logout
 		} finally {
 			logoutStore();
-			toast.success("Sesión cerrada correctamente");
+			toast.success("Logged out successfully");
 			navigate("/auth/login");
 		}
 	}, [navigate, logoutStore]);

@@ -6,8 +6,8 @@ import { z } from "zod";
 export const postFormSchema = z.object({
 	title: z
 		.string()
-		.min(1, "El título es obligatorio")
-		.max(200, "El título no puede exceder 200 caracteres"),
+		.min(1, "Title is required")
+		.max(200, "Title cannot exceed 200 characters"),
 	content: z.string(),
 });
 

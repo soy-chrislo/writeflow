@@ -7,7 +7,7 @@ Globals:
     Timeout: 30
     Runtime: nodejs22.x
     Architectures:
-      - x86_64
+      - arm64
     Environment:
       Variables:
         POSTS_TABLE: !Ref PostsTable

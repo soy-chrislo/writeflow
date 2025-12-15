@@ -49,7 +49,7 @@ export default function Login() {
 	async function onSubmit(data: LoginFormValues) {
 		try {
 			await login(data, { skipNavigate: true });
-			toast.success("Sesión iniciada correctamente");
+			toast.success("Logged in successfully");
 			navigate(from, { replace: true });
 		} catch {
 			// Error handled in hook
@@ -57,14 +57,37 @@ export default function Login() {
 	}
 
 	return (
-		<div className="flex min-h-screen w-full items-center justify-center p-6">
-			<Card className="w-full max-w-sm">
-				<CardHeader className="text-center">
-					<CardTitle className="text-2xl">Welcome back</CardTitle>
-					<CardDescription>
-						Enter your credentials to access your account
-					</CardDescription>
-				</CardHeader>
+		<div className="flex min-h-screen w-full">
+			{/* Left side - Branding */}
+			<div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-12 flex-col justify-between">
+				<Link to="/" className="text-3xl font-bold text-primary-foreground">
+					Writeflow
+				</Link>
+				<div>
+					<blockquote className="text-xl text-primary-foreground/90 font-medium mb-4">
+						"The simple, serverless way to share your ideas with the world."
+					</blockquote>
+					<p className="text-primary-foreground/70">
+						Start writing today, pay only for what you use.
+					</p>
+				</div>
+				<p className="text-sm text-primary-foreground/50">
+					Powered by AWS Serverless
+				</p>
+			</div>
+
+			{/* Right side - Form */}
+			<div className="flex w-full lg:w-1/2 items-center justify-center p-6">
+				<Card className="w-full max-w-sm border-0 shadow-none lg:border lg:shadow-sm">
+					<CardHeader className="text-center">
+						<Link to="/" className="text-2xl font-bold text-primary lg:hidden mb-4 block">
+							Writeflow
+						</Link>
+						<CardTitle className="text-2xl">Welcome back</CardTitle>
+						<CardDescription>
+							Enter your credentials to access your account
+						</CardDescription>
+					</CardHeader>
 				<CardContent>
 					{error && (
 						<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
@@ -135,12 +158,13 @@ export default function Login() {
 
 					<div className="mt-4 text-center text-sm">
 						Don't have an account?{" "}
-						<Link to="/auth/register" className="text-primary hover:underline">
+						<Link to="/auth/register" className="text-primary hover:underline font-medium">
 							Sign up
 						</Link>
 					</div>
 				</CardContent>
-			</Card>
+				</Card>
+			</div>
 		</div>
 	);
 }

@@ -82,7 +82,7 @@ export function useTokenRefresh() {
 				scheduleRefresh();
 			} catch {
 				logout();
-				toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+				toast.error("Your session has expired. Please log in again.");
 			}
 		};
 
