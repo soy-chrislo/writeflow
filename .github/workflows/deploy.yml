@@ -261,7 +261,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sam-build
-          path: backend/writeflow-sam-app/.aws-sam
+          path: |
+            backend/writeflow-sam-app/.aws-sam/build/
+            backend/writeflow-sam-app/.aws-sam/build.toml
           if-no-files-found: error
           retention-days: 1
 
