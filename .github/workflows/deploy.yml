@@ -79,7 +79,7 @@ jobs:
         run: pnpm build
         working-directory: app
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL_DEV }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL_DEV }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
