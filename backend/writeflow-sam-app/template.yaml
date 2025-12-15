@@ -107,6 +107,7 @@ Resources:
         AddDefaultAuthorizerToCorsPreflight: false
         # API Key requerida para todos los endpoints (rate limiting por key)
         ApiKeyRequired: true
+        AddApiKeyRequiredToCorsPreflight: false
         UsagePlan:
           CreateUsagePlan: PER_API
           UsagePlanName: !Sub writeflow-usage-plan-${Environment}
