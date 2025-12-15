@@ -150,6 +150,11 @@ jobs:
           name: frontend-build
           path: app/dist
 
+      - name: Debug - List downloaded files
+        run: |
+          echo "Contents of app/dist:"
+          ls -la app/dist/
+
       - name: Create Pages project if not exists
         run: |
           PROJECT_NAME="writeflow"
@@ -240,6 +245,11 @@ jobs:
         run: npm run docs:build
         working-directory: backend/writeflow-sam-app
 
+      - name: Debug - List built files
+        run: |
+          echo "Contents of docs-dist:"
+          ls -la backend/writeflow-sam-app/docs-dist/
+
       - name: Upload docs artifact
         uses: actions/upload-artifact@v4
         with:
@@ -267,6 +277,11 @@ jobs:
         with:
           name: api-docs-build
           path: docs-dist
+
+      - name: Debug - List downloaded files
+        run: |
+          echo "Contents of docs-dist:"
+          ls -la docs-dist/
 
       - name: Create Pages project if not exists
         run: |
