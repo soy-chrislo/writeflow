@@ -19,8 +19,16 @@ type StatusFilter = PostStatus | "all";
 
 export default function MyPosts() {
 	const navigate = useNavigate();
-	const { posts, isLoading, error, fetchMyPosts, loadMore, hasMore, removePost, restorePost } =
-		usePosts();
+	const {
+		posts,
+		isLoading,
+		error,
+		fetchMyPosts,
+		loadMore,
+		hasMore,
+		removePost,
+		restorePost,
+	} = usePosts();
 	const { deletePost, isSaving: isDeleting } = usePost();
 
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");

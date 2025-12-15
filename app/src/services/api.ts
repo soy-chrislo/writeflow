@@ -171,12 +171,9 @@ async function request<T>(
 	if (!response.ok) {
 		const errorData = await response.json().catch(() => null);
 		// Backend error format: { success: false, error: "message" }
-		const errorMessage = errorData?.error || errorData?.message || `HTTP error ${response.status}`;
-		throw new ApiError(
-			response.status,
-			errorMessage,
-			errorData,
-		);
+		const errorMessage =
+			errorData?.error || errorData?.message || `HTTP error ${response.status}`;
+		throw new ApiError(response.status, errorMessage, errorData);
 	}
 
 	if (response.status === 204) {
@@ -187,7 +184,12 @@ async function request<T>(
 
 	// Backend wraps responses in { success: true, data: T }
 	// Extract the data field for consistent frontend usage
-	if (json && typeof json === "object" && "success" in json && json.data !== undefined) {
+	if (
+		json &&
+		typeof json === "object" &&
+		"success" in json &&
+		json.data !== undefined
+	) {
 		return json.data as T;
 	}
 

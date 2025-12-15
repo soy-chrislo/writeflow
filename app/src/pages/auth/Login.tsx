@@ -80,7 +80,10 @@ export default function Login() {
 			<div className="flex w-full lg:w-1/2 items-center justify-center p-6">
 				<Card className="w-full max-w-sm border-0 shadow-none lg:border lg:shadow-sm">
 					<CardHeader className="text-center">
-						<Link to="/" className="text-2xl font-bold text-primary lg:hidden mb-4 block">
+						<Link
+							to="/"
+							className="text-2xl font-bold text-primary lg:hidden mb-4 block"
+						>
 							Writeflow
 						</Link>
 						<CardTitle className="text-2xl">Welcome back</CardTitle>
@@ -88,81 +91,87 @@ export default function Login() {
 							Enter your credentials to access your account
 						</CardDescription>
 					</CardHeader>
-				<CardContent>
-					{error && (
-						<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-							{error}
-							<button
-								type="button"
-								onClick={clearError}
-								className="ml-2 underline"
+					<CardContent>
+						{error && (
+							<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+								{error}
+								<button
+									type="button"
+									onClick={clearError}
+									className="ml-2 underline"
+								>
+									Dismiss
+								</button>
+							</div>
+						)}
+
+						<Form {...form}>
+							<form
+								onSubmit={form.handleSubmit(onSubmit)}
+								className="space-y-4"
 							>
-								Dismiss
-							</button>
+								<FormField
+									control={form.control}
+									name="email"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Email</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="email@example.com"
+													type="email"
+													autoComplete="email"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="password"
+									render={({ field }) => (
+										<FormItem>
+											<div className="flex items-center justify-between">
+												<FormLabel>Password</FormLabel>
+												<Link
+													to="/auth/forgot-password"
+													className="text-sm text-muted-foreground hover:text-primary"
+												>
+													Forgot password?
+												</Link>
+											</div>
+											<FormControl>
+												<Input
+													type="password"
+													placeholder="••••••••"
+													autoComplete="current-password"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<Button type="submit" className="w-full" disabled={isLoading}>
+									{isLoading ? "Signing in..." : "Sign in"}
+								</Button>
+							</form>
+						</Form>
+
+						<div className="mt-4 text-center text-sm">
+							Don't have an account?{" "}
+							<Link
+								to="/auth/register"
+								className="text-primary hover:underline font-medium"
+							>
+								Sign up
+							</Link>
 						</div>
-					)}
-
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Email</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="email@example.com"
-												type="email"
-												autoComplete="email"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="password"
-								render={({ field }) => (
-									<FormItem>
-										<div className="flex items-center justify-between">
-											<FormLabel>Password</FormLabel>
-											<Link
-												to="/auth/forgot-password"
-												className="text-sm text-muted-foreground hover:text-primary"
-											>
-												Forgot password?
-											</Link>
-										</div>
-										<FormControl>
-											<Input
-												type="password"
-												placeholder="••••••••"
-												autoComplete="current-password"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<Button type="submit" className="w-full" disabled={isLoading}>
-								{isLoading ? "Signing in..." : "Sign in"}
-							</Button>
-						</form>
-					</Form>
-
-					<div className="mt-4 text-center text-sm">
-						Don't have an account?{" "}
-						<Link to="/auth/register" className="text-primary hover:underline font-medium">
-							Sign up
-						</Link>
-					</div>
-				</CardContent>
+					</CardContent>
 				</Card>
 			</div>
 		</div>

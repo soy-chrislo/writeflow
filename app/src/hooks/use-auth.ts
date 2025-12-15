@@ -107,7 +107,9 @@ export function useAuth() {
 					password: data.password,
 				});
 				setPendingEmail(data.email);
-				toast.success("Account created! Please check your email for the confirmation code.");
+				toast.success(
+					"Account created! Please check your email for the confirmation code.",
+				);
 				navigate("/auth/confirm");
 				return response;
 			} catch (err) {
@@ -238,7 +240,7 @@ export function useAuth() {
 				expiresIn: response.expiresIn,
 			});
 			return true;
-		} catch (err) {
+		} catch {
 			logoutStore();
 			return false;
 		}

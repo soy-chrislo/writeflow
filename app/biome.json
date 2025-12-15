@@ -9,7 +9,17 @@
 		"includes": ["**", "!dist"]
 	},
 	"javascript": { "formatter": { "quoteStyle": "double" } },
+	"css": {
+		"parser": {
+			"cssModules": true,
+			"tailwindDirectives": true
+		}
+	},
 	"overrides": [
+		{
+			"includes": ["src/components/ui/**"],
+			"linter": { "enabled": false }
+		},
 		{
 			"includes": ["**/*.{ts,tsx}"],
 			"linter": {

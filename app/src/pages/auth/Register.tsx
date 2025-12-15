@@ -82,97 +82,106 @@ export default function Register() {
 			<div className="flex w-full lg:w-1/2 items-center justify-center p-6">
 				<Card className="w-full max-w-sm border-0 shadow-none lg:border lg:shadow-sm">
 					<CardHeader className="text-center">
-						<Link to="/" className="text-2xl font-bold text-primary lg:hidden mb-4 block">
+						<Link
+							to="/"
+							className="text-2xl font-bold text-primary lg:hidden mb-4 block"
+						>
 							Writeflow
 						</Link>
 						<CardTitle className="text-2xl">Create an account</CardTitle>
 						<CardDescription>Enter your details to get started</CardDescription>
 					</CardHeader>
 					<CardContent>
-					{error && (
-						<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-							{error}
-							<button
-								type="button"
-								onClick={clearError}
-								className="ml-2 underline"
+						{error && (
+							<div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+								{error}
+								<button
+									type="button"
+									onClick={clearError}
+									className="ml-2 underline"
+								>
+									Dismiss
+								</button>
+							</div>
+						)}
+
+						<Form {...form}>
+							<form
+								onSubmit={form.handleSubmit(onSubmit)}
+								className="space-y-4"
 							>
-								Dismiss
-							</button>
+								<FormField
+									control={form.control}
+									name="email"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Email</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="email@example.com"
+													type="email"
+													autoComplete="email"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="password"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Password</FormLabel>
+											<FormControl>
+												<Input
+													type="password"
+													placeholder="••••••••"
+													autoComplete="new-password"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="confirmPassword"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Confirm Password</FormLabel>
+											<FormControl>
+												<Input
+													type="password"
+													placeholder="••••••••"
+													autoComplete="new-password"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<Button type="submit" className="w-full" disabled={isLoading}>
+									{isLoading ? "Creating account..." : "Create account"}
+								</Button>
+							</form>
+						</Form>
+
+						<div className="mt-4 text-center text-sm">
+							Already have an account?{" "}
+							<Link
+								to="/auth/login"
+								className="text-primary hover:underline font-medium"
+							>
+								Sign in
+							</Link>
 						</div>
-					)}
-
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Email</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="email@example.com"
-												type="email"
-												autoComplete="email"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="password"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Password</FormLabel>
-										<FormControl>
-											<Input
-												type="password"
-												placeholder="••••••••"
-												autoComplete="new-password"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="confirmPassword"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Confirm Password</FormLabel>
-										<FormControl>
-											<Input
-												type="password"
-												placeholder="••••••••"
-												autoComplete="new-password"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<Button type="submit" className="w-full" disabled={isLoading}>
-								{isLoading ? "Creating account..." : "Create account"}
-							</Button>
-						</form>
-					</Form>
-
-					<div className="mt-4 text-center text-sm">
-						Already have an account?{" "}
-						<Link to="/auth/login" className="text-primary hover:underline font-medium">
-							Sign in
-						</Link>
-					</div>
 					</CardContent>
 				</Card>
 			</div>

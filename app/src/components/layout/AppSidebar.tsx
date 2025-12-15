@@ -35,7 +35,9 @@ export function AppSidebar() {
 	return (
 		<Sidebar collapsible="none">
 			<SidebarHeader className="border-b border-sidebar-border px-4 py-3">
-				<span className="text-lg font-semibold text-sidebar-foreground">Writeflow</span>
+				<span className="text-lg font-semibold text-sidebar-foreground">
+					Writeflow
+				</span>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>

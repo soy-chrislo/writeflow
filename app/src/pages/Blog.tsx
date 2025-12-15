@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
@@ -58,7 +57,8 @@ export default function Blog() {
 							Welcome to <span className="text-primary">Writeflow</span>
 						</h1>
 						<p className="text-lg text-muted-foreground mb-6">
-							Discover stories, ideas, and insights from our community of writers.
+							Discover stories, ideas, and insights from our community of
+							writers.
 						</p>
 						{!isAuthenticated && (
 							<Button asChild size="lg">
@@ -115,7 +115,10 @@ export default function Blog() {
 									<Card className="group h-full hover:shadow-lg hover:border-primary/20 transition-all duration-300">
 										<CardHeader className="space-y-3">
 											<div className="flex items-center gap-2">
-												<Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+												<Badge
+													variant="secondary"
+													className="bg-primary/10 text-primary hover:bg-primary/20"
+												>
 													{post.status === "published" ? "Published" : "Draft"}
 												</Badge>
 												{post.publishedAt && (

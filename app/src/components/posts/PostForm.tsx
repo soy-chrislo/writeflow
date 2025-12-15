@@ -76,7 +76,9 @@ export function PostForm({
 		initialData?.content || "",
 	);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [savingAction, setSavingAction] = useState<"draft" | "publish" | "unpublish" | null>(null);
+	const [savingAction, setSavingAction] = useState<
+		"draft" | "publish" | "unpublish" | null
+	>(null);
 
 	const form = useForm<PostFormValues>({
 		resolver: zodResolver(postFormSchema),
@@ -213,7 +215,9 @@ export function PostForm({
 						onClick={handleSaveDraft}
 						disabled={isDisabled}
 					>
-						{savingAction === "draft" ? <Loader2 className="size-4 animate-spin" /> : null}
+						{savingAction === "draft" ? (
+							<Loader2 className="size-4 animate-spin" />
+						) : null}
 						{mode === "create" ? "Save draft" : "Save"}
 					</Button>
 					{/* Show Unpublish button for published posts, Publish for drafts */}
@@ -226,16 +230,16 @@ export function PostForm({
 							onClick={handleUnpublish}
 							disabled={isDisabled}
 						>
-							{savingAction === "unpublish" ? <Loader2 className="size-4 animate-spin" /> : null}
+							{savingAction === "unpublish" ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : null}
 							Unpublish
 						</Button>
 					) : (
-						<Button
-							type="button"
-							onClick={handlePublish}
-							disabled={isDisabled}
-						>
-							{savingAction === "publish" ? <Loader2 className="size-4 animate-spin" /> : null}
+						<Button type="button" onClick={handlePublish} disabled={isDisabled}>
+							{savingAction === "publish" ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : null}
 							Publish
 						</Button>
 					)}
@@ -297,7 +301,8 @@ export function PostForm({
 						{initialData.slug && <span>Slug: {initialData.slug}</span>}
 						{initialData.createdAt && (
 							<span>
-								Created: {format(new Date(initialData.createdAt), "MMM d, yyyy")}
+								Created:{" "}
+								{format(new Date(initialData.createdAt), "MMM d, yyyy")}
 							</span>
 						)}
 						{initialData.updatedAt && (
@@ -333,8 +338,8 @@ export function PostForm({
 								<AlertDialogHeader>
 									<AlertDialogTitle>Delete post?</AlertDialogTitle>
 									<AlertDialogDescription>
-										This action cannot be undone. The post "
-										{initialData.title}" will be permanently deleted.
+										This action cannot be undone. The post "{initialData.title}"
+										will be permanently deleted.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>

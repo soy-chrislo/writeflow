@@ -101,7 +101,8 @@ export function usePosts() {
 		setState((prev) => ({
 			...prev,
 			posts: [post, ...prev.posts].sort(
-				(a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+				(a, b) =>
+					new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
 			),
 		}));
 	}, []);
