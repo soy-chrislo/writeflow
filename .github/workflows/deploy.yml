@@ -150,6 +150,26 @@ jobs:
           name: frontend-build
           path: app/dist
 
+      - name: Create Pages project if not exists
+        run: |
+          PROJECT_NAME="writeflow"
+          API_URL="https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects"
+
+          # Check if project exists
+          RESPONSE=$(curl -s -X GET "$API_URL/$PROJECT_NAME" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}")
+
+          if echo "$RESPONSE" | jq -e '.success == true' > /dev/null 2>&1; then
+            echo "✅ Project $PROJECT_NAME already exists"
+          else
+            echo "Creating project $PROJECT_NAME..."
+            curl -s -X POST "$API_URL" \
+              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"$PROJECT_NAME\",\"production_branch\":\"main\"}"
+            echo "✅ Project created"
+          fi
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         id: deploy
@@ -247,6 +267,26 @@ jobs:
         with:
           name: api-docs-build
           path: docs-dist
+
+      - name: Create Pages project if not exists
+        run: |
+          PROJECT_NAME="writeflow-api-docs"
+          API_URL="https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects"
+
+          # Check if project exists
+          RESPONSE=$(curl -s -X GET "$API_URL/$PROJECT_NAME" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}")
+
+          if echo "$RESPONSE" | jq -e '.success == true' > /dev/null 2>&1; then
+            echo "✅ Project $PROJECT_NAME already exists"
+          else
+            echo "Creating project $PROJECT_NAME..."
+            curl -s -X POST "$API_URL" \
+              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"$PROJECT_NAME\",\"production_branch\":\"main\"}"
+            echo "✅ Project created"
+          fi
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
