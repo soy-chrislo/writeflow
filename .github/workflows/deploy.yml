@@ -115,7 +115,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy app/dist --project-name=writeflow --branch=${{ github.head_ref }} --commit-dirty=true
+          command: pages deploy app/dist --project-name=writeflow --branch=${{ github.head_ref }} --commit-dirty=true --no-bundle
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
@@ -180,7 +180,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy app/dist --project-name=writeflow --branch=main --commit-dirty=true
+          command: pages deploy app/dist --project-name=writeflow --branch=main --commit-dirty=true --no-bundle
 
       - name: Deployment Summary
         run: |
@@ -409,7 +409,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs-dist --project-name=writeflow-api-docs --branch=main --commit-dirty=true
+          command: pages deploy docs-dist --project-name=writeflow-api-docs --branch=main --commit-dirty=true --no-bundle
 
       - name: Deployment Summary
         run: |
