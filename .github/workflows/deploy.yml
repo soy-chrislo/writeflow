@@ -250,11 +250,19 @@ jobs:
         run: sam build
         working-directory: backend/writeflow-sam-app
 
+      - name: Verify build output
+        run: |
+          echo "Contents of .aws-sam:"
+          ls -la backend/writeflow-sam-app/.aws-sam/
+          echo "Contents of .aws-sam/build:"
+          ls -la backend/writeflow-sam-app/.aws-sam/build/ || echo "No build directory"
+
       - name: Upload SAM build artifact
         uses: actions/upload-artifact@v4
         with:
           name: sam-build
           path: backend/writeflow-sam-app/.aws-sam
+          if-no-files-found: error
           retention-days: 1
 
   deploy-backend:
