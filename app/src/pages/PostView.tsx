@@ -16,13 +16,45 @@ export default function PostView() {
 		isLoadingPost: isLoading,
 		postError: error,
 		fetchPost,
+		fetchMyPost,
 	} = usePostsStore();
 	const { user, isAuthenticated } = useAuthStore();
 
 	useEffect(() => {
 		if (!slug) return;
-		fetchPost(slug);
-	}, [slug, fetchPost]);
+
+		const loadPost = async () => {
+			// If authenticated, try to fetch as "my post" first (includes drafts)
+			if (isAuthenticated) {
+				try {
+					await fetchMyPost(slug);
+					return;
+				} catch {
+					// If 404, fall through to try public endpoint
+					// (in case it's a published post by another author)
+				}
+			}
+
+			// Try public endpoint (published posts only)
+			try {
+				await fetchPost(slug);
+			} catch {
+				// Error is already set in the store
+			}
+		};
+
+		loadPost();
+	}, [slug, isAuthenticated, fetchPost, fetchMyPost]);
+
+	// Update document title when post loads
+	useEffect(() => {
+		if (post?.title) {
+			document.title = `${post.title} - Writeflow`;
+		}
+		return () => {
+			document.title = "Writeflow";
+		};
+	}, [post?.title]);
 
 	const isOwner = isAuthenticated && user && post?.authorId === user.id;
 
